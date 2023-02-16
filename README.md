@@ -1,2 +1,2 @@
-# etflDesigner
+# ETFLdesigner
 Repo for strain design based on ETFL models
