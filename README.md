@@ -6,7 +6,7 @@ Repo for strain design based on ETFL models
 For documentation and API please check: 
 
 # Installation
-pip install mewpy
+pip install xxxx
 
 
 # Contribution
