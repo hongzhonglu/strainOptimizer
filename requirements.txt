@@ -1,0 +1,10 @@
+numpy
+cobra
+reframed
+inspyred
+jmetalpy
+networkx
+matplotlib
+tqdm
+joblib
+
