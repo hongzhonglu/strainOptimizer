@@ -1,0 +1,43 @@
+{% set version = '1.9' %}
+
+package:
+  name: straindesign
+  version: {{ version }}
+
+source:
+  git_url: https://github.com/klamt-lab/straindesign
+  git_rev: v{{ version }}
+
+requirements:
+  build:
+    - setuptools
+    - pip
+    - python>=3.7
+  run:
+    - openjdk=8
+    - matplotlib
+    - pip
+    - python>=3.7
+    - scipy
+    - conda-forge:cobra
+    - jpype1
+    - psutil
+
+build:
+  noarch: python
+  number: 0  # NOTE: increment for new build/set to zero for new version
+  script:
+    - python setup.py install --single-version-externally-managed --record record.txt
+
+test:
+  imports:
+    - straindesign
+
+about:
+  home:  https://github.com/klamt-lab/straindesign
+  license: Apache 2
+  license_family: MIT
+  license_file: LICENSE
+  summary: Computational strain design package for the COBRApy framework.
+  doc_url: https://github.com/klamt-lab/straindesign
+  dev_url: https://github.com/klamt-lab/straindesign

@@ -1,5 +1,5 @@
 
-MEWpy examples
+ETFLdesigner examples + Tutorial to run ETFL models
 ============
 
 This folder contains examples on how MEWpy can be used to perform phenotype simulations and Computational Strain Optimization.
