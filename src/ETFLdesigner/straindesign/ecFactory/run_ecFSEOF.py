@@ -2,10 +2,11 @@
 # date : 2023/2/26 
 # author : wangh
 import sys
-sys.path.append(r"D:\code\github\etfl\code_etfl\EFL_strain_design\ecFactory")
+sys.path.append(r"D:\code\github\etfl\code_etfl\ETFLdesigner\ecFactory")
 
 import pandas as pd
 import fseof
+from ecFactory_other import find_leaks,remove_essential_targets
 
 def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
     '''
@@ -41,9 +42,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     # thresholds = [0.5, 1.05]  # K-score thresholds for valid gene targets
     # delLimit = 0.05  # K-score limit for considering a target as deletion
 
-    # read file with essential genes list
-    if remove_essential:
-        essential = pd.read_csv('../data/essential_genes.txt', sep='\t').Ids.str.strip()
+
 
 
 
@@ -52,10 +51,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     print(f'{step}.-  **** Running ecFSEOF method (ref: GECKO utilities) ****')
     results = fseof.run_FSEOF(model=model, targetID=modelParam['targetID'], c_source=modelParam['c_source'],c_uptake=modelParam['c_uptake'], alphaLims=alphaLims, Nsteps=Nsteps,model_type=model_type)
     genes = results['geneTable'].index.tolist()
-    print('\n')
-    print(f'ecFSEOF returned {len(genes)} targets')
-    print('\n')
-
+    print(f'ecFSEOF returned {len(genes)} targets\n')
     # Format results table
     gene_result=results['geneTable']
     gene_result.loc[gene_result['k_score'] >= action_thresholds[2], 'actions'] = 'OE'
@@ -67,8 +63,17 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
 
     # 2.- Add flux leak targets (those genes not optimal for production that may consume the product of interest.
     # (probaly extend the approach to inmediate precurssors)
+    step += 1
+    print(f'{step}.-  **** Find flux leak targets to block ****')
+    results['geneTable'] = find_leaks(candidates=results['geneTable'], targetID=modelParam['targetID'], model=model)
+
 
     # 3.- discard essential genes from deletion targets
+    if remove_essential:
+        step += 1
+        print(f'{step}.-  **** Removing essential targets ****')
+        # print(type(results['geneTable']))
+        results['geneTable'] = remove_essential_targets(candidates=results['geneTable'])
 
     # 4.- Construct Genes-metabolites network for classification of targets
 
