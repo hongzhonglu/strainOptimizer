@@ -6,7 +6,7 @@ sys.path.append(r"D:\code\github\etfl\code_etfl\ETFLdesigner\ecFactory")
 
 import pandas as pd
 import fseof
-from ecFactory_other import find_leaks,remove_essential_targets
+from ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups
 
 def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
     '''
@@ -29,7 +29,6 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
         3. actions: action type for the gene
 
     '''
-
     # method parameters
     tol = 1E-13  # numeric tolerance for determining non-zero enzyme usages
     OEF = 2  # overexpression factor for enzyme targets
@@ -42,31 +41,25 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     # thresholds = [0.5, 1.05]  # K-score thresholds for valid gene targets
     # delLimit = 0.05  # K-score limit for considering a target as deletion
 
-
-
-
-
     # 1.- Run FSEOF to find gene candidates
     step = step + 1
     print(f'{step}.-  **** Running ecFSEOF method (ref: GECKO utilities) ****')
     results = fseof.run_FSEOF(model=model, targetID=modelParam['targetID'], c_source=modelParam['c_source'],c_uptake=modelParam['c_uptake'], alphaLims=alphaLims, Nsteps=Nsteps,model_type=model_type)
-    genes = results['geneTable'].index.tolist()
-    print(f'ecFSEOF returned {len(genes)} targets\n')
     # Format results table
     gene_result=results['geneTable']
     gene_result.loc[gene_result['k_score'] >= action_thresholds[2], 'actions'] = 'OE'
     gene_result.loc[gene_result['k_score'] <= action_thresholds[1], 'actions'] = 'KD'
     gene_result.loc[gene_result['k_score'] <= action_thresholds[0], 'actions'] = 'KO'
+    # remove genes with no action
+    gene_result = gene_result.loc[gene_result['actions'].notnull()]
+    print(f'ecFSEOF returned {len(gene_result)} targets\n')
     results['geneTable'] = gene_result
-
-    # get candidate gene related enzyme information
 
     # 2.- Add flux leak targets (those genes not optimal for production that may consume the product of interest.
     # (probaly extend the approach to inmediate precurssors)
     step += 1
     print(f'{step}.-  **** Find flux leak targets to block ****')
     results['geneTable'] = find_leaks(candidates=results['geneTable'], targetID=modelParam['targetID'], model=model)
-
 
     # 3.- discard essential genes from deletion targets
     if remove_essential:
@@ -76,8 +69,23 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
         results['geneTable'] = remove_essential_targets(candidates=results['geneTable'])
 
     # 4.- Construct Genes-metabolites network for classification of targets
+    step += 1
+    print(str(step) + '.-  **** Construct Genes-metabolites network for classification of targets ****')
+    # Get Genes-metabolites network
+    metGeneMatrix, metsConectivity, genesConectivity=getMetGeneMatrix(model=model,geneIDlist=results['geneTable'].index.tolist())
+    # Get independent genes from GeneMetMatrix
+    independant_genes,gene_equal_Matrix=getGeneDepMatrix(metGeneMatrix)
+    # Get gene target groups (those connected to exactly the same metabolites)
+    groups = getGenesGroups(gene_equal_Matrix)
+    print('independent targets: ' + str(len(independant_genes)))
+    print('target groups: ' + str(len(groups)))
+    print('\n')
+    results['independent_genes'] = independant_genes
+    results['groups'] = groups
 
     # 5.- enzyme usage variety analysis(EUVA)
+    step += 1
+    print(str(step) + '.-  **** Enzyme usage variety analysis(EUVA) ****(unfinshed)')
 
     # 6.- EUVA for suboptimal biomasss production subject to a minimal (1%) production rate of the target product
     # and a unit CS uptake rate Get max biomass
