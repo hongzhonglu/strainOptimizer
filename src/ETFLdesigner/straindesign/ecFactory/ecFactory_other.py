@@ -6,58 +6,68 @@ import pandas as pd
 from etfl.io.json import load_json_model
 
 
-def find_leaks(candidates, targetID, model):
+def find_leaks(candidates, targetID, model,product_name):
     '''function to find reactions that consume the target.
     :param candidates: a pandas dataframe with the following columns:
         1. geneID: gene ID
         2. k_score: k-score of the gene
         3. actions: action type for the gene
     :param targetID: target product exchange reaction ID
-    :param model: ETFL model
+    :param model: COBRA model
+    :param product_name: product name
     :return: a pandas dataframe with the following columns:
 
     '''
     # assume target objective rxn must be the exchange rxn
-    met_ex_rxn = model.reactions.get_by_id(targetID)
-    met_e_id=met_ex_rxn.reactants[0].id
-    met_c_id=met_e_id.replace('e','c')
-    met_c=model.metabolites.get_by_id(met_c_id)
-    with model:
-        # set the target exchange reaction as objective
-        model.objective = targetID
-        # optimize
-        sol = model.optimize()
+    # find the metabolite of the target in cytoplasm and extracellular
+    mets=model.metabolites.query(product_name, 'name')
+    if len(mets)==0:
+        print('No metabolite found with the given name.\n')
+        return candidates
+    else:
+        for met in mets:
+            if met.compartment=='c':
+                met_c=model.metabolites.get_by_id(met.id)
+            elif met.compartment=='e':
+                met_e=model.metabolites.get_by_id(met.id)
+        # met_c_id=met_e_id.replace('e','c')
+        # met_c=model.metabolites.get_by_id(met_c_id)
+        with model:
+            # set the target exchange reaction as objective
+            model.objective = targetID
+            # optimize
+            sol = model.optimize()
 
-    # Find reactions that consume the product in the cytoplasm
-    met_c_sum = met_c.summary(solution=sol)
-    consuming_rxnIDs= met_c_sum.consuming_flux.index.tolist()
+        # Find reactions that consume the product in the cytoplasm
+        met_c_sum = met_c.summary(solution=sol)
+        consuming_rxnIDs= met_c_sum.consuming_flux.index.tolist()
 
-    target_genes=[]
-    for rxnID in consuming_rxnIDs:
-        rxn=model.reactions.get_by_id(rxnID)
-        # remove rxn to the product target
-        met_idList=[met.id for met in list(rxn.metabolites.keys())]
-        if met_e_id in met_idList:
-            consuming_rxnIDs.remove(rxnID)
-            continue
-        else:
-            # find gene taget for the rxn
-            geneList=list(rxn.genes)
-            geneIDlist=[gene.id for gene in geneList]
-            # remove gene that has been included in candidates
-            geneIDlist=[geneID for geneID in geneIDlist if geneID not in candidates.index.tolist()]
+        target_genes=[]
+        for rxnID in consuming_rxnIDs:
+            rxn=model.reactions.get_by_id(rxnID)
+            # remove rxn to the product target
+            met_idList=[met.id for met in list(rxn.metabolites.keys())]
+            if met_e.id in met_idList:
+                consuming_rxnIDs.remove(rxnID)
+                continue
+            else:
+                # find gene taget for the rxn
+                geneList=list(rxn.genes)
+                geneIDlist=[gene.id for gene in geneList]
+                # remove gene that has been included in candidates
+                geneIDlist=[geneID for geneID in geneIDlist if geneID not in candidates.index.tolist()]
 
-            target_genes=target_genes+geneIDlist
+                target_genes=target_genes+geneIDlist
 
-    df_new=pd.DataFrame({'geneID':target_genes,'k_score':np.nan,'actions':np.nan})
-    df_new.set_index('geneID',inplace=True)
-    df_new['k_score']=[0]*len(target_genes)
-    df_new['actions']=['KO']*len(target_genes)
-    print('%s leak rxn has been found and added to candidates.\n'%len(target_genes))
-    # add to candidates
-    candidates=candidates.append(df_new)
+        df_new=pd.DataFrame({'geneID':target_genes,'k_score':np.nan,'actions':np.nan})
+        df_new.set_index('geneID',inplace=True)
+        df_new['k_score']=[0]*len(target_genes)
+        df_new['actions']=['KO']*len(target_genes)
+        print('%s leak rxn has been found and added to candidates.\n'%len(target_genes))
+        # add to candidates
+        candidates=candidates.append(df_new)
 
-    return candidates
+        return candidates
 
 
 def remove_essential_targets(candidates,essential_path=r'code_etfl/ETFLdesigner/data/essential_genes.txt'):

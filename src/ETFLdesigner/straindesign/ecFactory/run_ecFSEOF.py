@@ -14,6 +14,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     :param model: ETFL model
     :param modelParam: a pandas series with the following parameters:
         targetID: target reaction ID
+        productName: product name(used to find the leak reactions)
         c_source: carbon source exchange reaction ID
         c_uptake: carbon source uptake rate
     :param expYield: experimental yield of the target product
@@ -59,7 +60,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     # (probaly extend the approach to inmediate precurssors)
     step += 1
     print(f'{step}.-  **** Find flux leak targets to block ****')
-    results['geneTable'] = find_leaks(candidates=results['geneTable'], targetID=modelParam['targetID'], model=model)
+    results['geneTable'] = find_leaks(candidates=results['geneTable'], targetID=modelParam['targetID'], model=model, product_name=modelParam['productName'])
 
     # 3.- discard essential genes from deletion targets
     if remove_essential:
@@ -77,9 +78,9 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     independant_genes,gene_equal_Matrix=getGeneDepMatrix(metGeneMatrix)
     # Get gene target groups (those connected to exactly the same metabolites)
     groups = getGenesGroups(gene_equal_Matrix)
-    print('independent targets: ' + str(len(independant_genes)))
+    print('independent targets: ' + str(len(independant_genes[independant_genes==1])))
     print('target groups: ' + str(len(groups)))
-    print('\n')
+    # print('\n')
     results['independent_genes'] = independant_genes
     results['groups'] = groups
 
