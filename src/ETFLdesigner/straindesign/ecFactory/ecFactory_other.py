@@ -4,6 +4,51 @@
 import numpy as np
 import pandas as pd
 from etfl.io.json import load_json_model
+from tqdm import tqdm
+from pytfa.analysis.variability import variability_analysis, _variability_analysis_element
+from etfl.optim.utils import fix_growth,release_growth,safe_optim
+
+
+def enzymeFVA(model,enzymeIDlist,fraction_of_optimum=0.95):
+    '''do FVA for a list of enzymes
+    para:
+        model: must be ETFL model
+        enzymeIDlist: a list of enzyme ID
+        fraction_of_optimum: Requires that the objective value is at least the
+            fraction times maximum objective value.Must be <= 1.0. (default 0.95)
+    return:
+        a dataframe of FVA result
+        '''
+    # get the objective function
+    objective = model.objective
+    # get all enzyme variable
+    all_enz=model.get_variables_of_type('EnzymeVariable')
+    all_enzIDlist=[enz.id for enz in all_enz]
+    # get the target enzyme list
+    target_enzlist={}
+    for enzID in enzymeIDlist:
+        if enzID in all_enzIDlist:
+            target_enzlist[enzID]=model.enzymes.get_by_id(enzID).variable
+        else:
+            print(f"can't find Enzyme {enzID} in the {model.name}")
+    sol=safe_optim(model)
+    max_growth = sol.objective_value
+    # fix growth rate
+    # fix_growth(model=model,solution=sol)
+    model.growth_reaction.bounds=max_growth*fraction_of_optimum,max_growth*fraction_of_optimum
+
+    # do FVA
+    results = {'min':{}, 'max':{}}
+    for sense in ['min','max']:
+        for k,var in tqdm(target_enzlist.items(), desc=sense+'imizing'):
+            model.logger.debug(sense + '-' + k)
+            results[sense][k] = _variability_analysis_element(model,var,sense)
+
+    release_growth(model=model)
+    model.objective = objective
+    df = pd.DataFrame(results)
+    df.rename(columns={'min':'minimum','max':'maximum'}, inplace = True)
+    return df
 
 
 def find_leaks(candidates, targetID, model,product_name):
