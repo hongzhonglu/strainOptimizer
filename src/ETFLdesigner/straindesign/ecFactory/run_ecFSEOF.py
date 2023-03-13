@@ -6,7 +6,7 @@ sys.path.append(r"D:\code\github\etfl\code_etfl\ETFLdesigner\ecFactory")
 
 import pandas as pd
 import fseof
-from ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,enzymeFVA,genelist_to_enzymelist,minprotFBA_prot_conc
+from ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,enzymeFVA,genelist_to_enzymelist,minprotFBA_prot_conc,compare_EUVR
 from etfl.optim.utils import safe_optim
 
 def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
@@ -94,7 +94,8 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     # get target enzyme list
     gene_targetList=results['geneTable'].index.tolist()
     target_enz_list,gene_enz_dict=genelist_to_enzymelist(model=model,genelist=gene_targetList)
-    results['gene_enz_dict']=gene_enz_dict
+    df_gene_to_enz=pd.Series(gene_enz_dict)
+    results['gene_enz_dict']=df_gene_to_enz
     # Fix unit C source uptake
     c_uptake = modelParam['c_uptake']
     c_source= modelParam['c_source']
@@ -102,6 +103,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     model.reactions.get_by_id(c_source).bounds=-c_uptake, -c_uptake
     print(f'  - Fixed unit glucose uptake rate at {c_uptake} mmol/gDW.h')
 
+    # 5.1 - Run EUVA for optimal production conditions
     print(str(step) + '.1-  **** Running EUVA for optimal production conditions ****')
     print('  - Fixed suboptimal biomass production, according to provided experimental yield')
     # Fix suboptimal experimental biomass yield conditions
@@ -115,33 +117,43 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     model.objective_direction = 'max'
     sol=safe_optim(model)
     max_prod=sol.objective_value
-    # run parsimonious protein usages FBA
-    prod_minprotFBA_protconc=minprotFBA_prot_conc(model=model,target=model.growth_reaction.id,enzymeIDlist=target_enz_list,c_source=c_source,c_uptake=c_uptake)
+    # fix max production rate
+    model.reactions.get_by_id(targetID).bounds = max_prod-tol, max_prod+tol
+    # run parsimonious protein usages FBA for max production
+    prod_minprotFBA_protconc=minprotFBA_prot_conc(model=model,target=targetID,enzymeIDlist=target_enz_list,c_source=c_source,c_uptake=c_uptake,tol=tol)
     # run enzyme usage variety analysis
     prod_enz_fva_result=enzymeFVA(model=model,enzymeIDlist=target_enz_list)
     prod_enz_fva_result['minprotFBA']=prod_minprotFBA_protconc
     results['prod_enz_fva_result']=prod_enz_fva_result      # can be deleted
+    # release biomass and production constraints
+    model.growth_reaction.bounds = 0, 1000
+    model.reactions.get_by_id(targetID).bounds = 0, 1000
 
-    # - EUVA for suboptimal biomasss production subject to a minimal (1%) production rate of the target product
-    # and a unit CS uptake rate Get max biomass
+    # 5.2 - Run EUVA for optimal growth condition.
     print(str(step) + '.2-  **** Running EUVA for optimal biomass growth condition ****')
     # fix production rate as 1% of the max production rate
     model.reactions.get_by_id(targetID).bounds = max_prod*0.01, max_prod*0.01
     print('  - Maximize biomass production')
     # set maximize biomass production as objective
+    model.growth_reaction.bounds = 0, 1000
     model.objective = model.growth_reaction
     model.objective_direction = 'max'
     sol=safe_optim(model)
     max_gr=sol.objective_value
     print(' Max biomass = ' + str(max_gr) + ' h-1')
-    # run parsimonious protein usages FBA
-    wt_minprotFBA_protconc=minprotFBA_prot_conc(model=model,target=targetID,enzymeIDlist=target_enz_list,c_source=c_source,c_uptake=c_uptake)
+    # fix max biomass production rate
+    model.growth_reaction.bounds = max_gr-tol, max_gr+tol
+    # run parsimonious protein usages FBA for max growth
+    wt_minprotFBA_protconc=minprotFBA_prot_conc(model=model,target=model.growth_reaction.id,enzymeIDlist=target_enz_list,c_source=c_source,c_uptake=c_uptake)
     # run enzyme usage variety analysis
     wt_enz_fva_result=enzymeFVA(model=model,enzymeIDlist=target_enz_list)
     wt_enz_fva_result['minprotFBA']=wt_minprotFBA_protconc
     results['wt_enz_fva_result']=wt_enz_fva_result     # can be deleted
+    # release biomass and production constraints
+    model.growth_reaction.bounds = 0, 1000
+    model.reactions.get_by_id(targetID).bounds = 0, 1000
 
-    # discard some targets according to the EUVA results
+    # 5.3 - Discard some targets according to the EUVA results
     print(str(step) + '.3-  **** Discarding targets according to EUVA results ****')
     # build a dataframe with all candidate genes  EUVA results
     gene_enz_fva_result=pd.DataFrame(index=results['geneTable'].index.tolist(),columns=['prod_min','prod_max','prod_minprot','wt_min','wt_max','wt_minprot'])
@@ -156,9 +168,66 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     results['gene_enz_fva_result']=gene_enz_fva_result
 
     # discard targets with no enzyme usage variety
+    # 5.3.1 Discard OE target candidates classified as futile for production(min=parsimonious=0)
+    oe_candidates=results['geneTable'][results['geneTable']['actions']=='OE'].index.tolist()
+    futile_candidates=gene_enz_fva_result[(gene_enz_fva_result['prod_min']==0) & (gene_enz_fva_result['prod_minprot']==0)].index.tolist()
+    futile_oe_toremove=list(set(oe_candidates).intersection(set(futile_candidates)))
+    results['geneTable']=results['geneTable'].drop(futile_oe_toremove)
+    print('  - Discard OE targets with min=parsimonious=0: ' + str(len(futile_oe_toremove)) + ' targets removed')
+
+    # 5.3.2 Discard enzymes essential for production from KO target candidates(lb>0).
+    ko_candidates=results['geneTable'][results['geneTable']['actions']=='KO'].index.tolist()
+    essential_candidates=gene_enz_fva_result[gene_enz_fva_result['prod_min']>0].index.tolist()
+    essential_ko_toremove=list(set(ko_candidates).intersection(set(essential_candidates)))
+    results['geneTable']=results['geneTable'].drop(essential_ko_toremove)
+    print('  - Discard KO targets with min>0: ' + str(len(essential_ko_toremove)) + ' targets removed')
+
+    # 5.3.3 Discard isoenzyme groups that contain an optimal isoform for biomass formation from KD and KO target candidates.
+    kd_ko_candidates=results['geneTable'][results['geneTable']['actions'].isin(['KD','KO'])].index.tolist()
+    iso_group=[]
+    for g_group in results['groups']:
+        group_enz_fva_result=gene_enz_fva_result.loc[g_group]
+        # check if there exist both >0 and =0 in prod_minprot
+        if group_enz_fva_result['prod_minprot'].max()>0 and group_enz_fva_result['prod_minprot'].min()==0:
+            iso_group=iso_group+g_group
+    iso_group_toremove=list(set(kd_ko_candidates).intersection(set(iso_group)))
+    results['geneTable']=results['geneTable'].drop(iso_group_toremove)
+    print('  - Discard KD and KO targets that belong to isoenzyme groups with optimal isoform for biomass formation: ' + str(len(iso_group_toremove)) + ' targets removed')
+
+    # 5.3.4  Discard enzymes with inconsistent result between EUVA and fseof
+    # remove discarded genes according to EUVA results
+    results['gene_enz_fva_result']=results['gene_enz_fva_result'].loc[results['geneTable'].index.tolist(),:]
+    gene_euvr_compare=compare_EUVR(results['gene_enz_fva_result'])
+
+    euva_up_List=gene_euvr_compare[gene_euvr_compare.str.contains('up_')].index.tolist()
+    euva_down_List=gene_euvr_compare[gene_euvr_compare.str.contains('down_')].index.tolist()
+    fseof_up_List=results['geneTable'][results['geneTable']['actions']=='OE'].index.tolist()
+    fseof_down_List=results['geneTable'][results['geneTable']['actions'].isin(['KD','OE'])].index.tolist()
+    # remove genes both in euva_up_List&fseof_down_List, euva_down_List&fseof_up_List
+    euva_up_fseof_down=list(set(euva_up_List).intersection(set(fseof_down_List)))
+    euva_down_fseof_up=list(set(euva_down_List).intersection(set(fseof_up_List)))
+    euva_inconsistent_toremove=euva_up_fseof_down+euva_down_fseof_up
+    results['geneTable']=results['geneTable'].drop(euva_inconsistent_toremove)
+    gene_euvr_compare=gene_euvr_compare.drop(euva_inconsistent_toremove)
+    print('  - Discard targets with inconsistent result between EUVA and fseof: ' + str(len(euva_inconsistent_toremove)) + ' targets removed')
+    results['gene_euvr_compare']=gene_euvr_compare
+
+    # 5.4 rank the remaining targets according to EUVA results
+    print(str(step) + '.4-  ****  **** Rank targets by priority levels according to EUVA results ****')
+    leval1_list=gene_euvr_compare[gene_euvr_compare.str.contains('distinct')].index.tolist()
+    leval2_list=gene_euvr_compare[gene_euvr_compare.str.contains('overlaped')].index.tolist()
+    leval3_list=gene_euvr_compare[gene_euvr_compare=='undistinguishable'].index.tolist()
+    genetable=results['geneTable']
+    # genetable['target_priority_leval']=0
+    genetable.loc[leval1_list,'target_priority_leval']=1
+    genetable.loc[leval2_list,'target_priority_leval']=2
+    genetable.loc[leval3_list,'target_priority_leval']=3
+    results['geneTable']=genetable
+    print('  - Rank targets by priority levels according to EUVA results: ' + str(len(leval1_list)) + ' targets in level 1, ' + str(len(leval2_list)) + ' targets in level 2, ' + str(len(leval3_list)) + ' targets in level 3')
 
 
-    # 7.- combine candidate targets
+    # 6.- combine candidate targets
+
 
     return results
 

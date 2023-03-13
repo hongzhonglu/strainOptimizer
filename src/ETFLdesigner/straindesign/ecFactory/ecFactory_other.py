@@ -11,7 +11,40 @@ from cobra.util.solver import set_objective
 from etfl.optim.utils import fix_growth,release_growth,safe_optim
 
 
-def minprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-6):
+def compare_EUVR(gene_enz_fva_result):
+    '''
+    classify the gene candidates according to compare the enzyme variaety analysis result between production condition and growth condition.
+    classify types:'up_distinct','up_overlaped','down_distinct','down_overlaped','undistinguishable'
+    para:
+        gene_enz_fva_result: the DataFrame including both production condition and growth condition EUVA result
+    return:
+        a DataFrame classify different gene types according to the comparative EUVA result
+
+    '''
+    # get the gene list
+    gene_list = gene_enz_fva_result.index.tolist()
+    df_gene_euvr_result = pd.Series(index=gene_list)
+    # classify the gene candidates according to the EUVA result
+    # up_distinct: prod_min>=wt_max>0
+    up_distinct_list=gene_enz_fva_result[(gene_enz_fva_result['prod_min']>=gene_enz_fva_result['wt_max'])&(gene_enz_fva_result['wt_max']>0)].index.tolist()
+    df_gene_euvr_result[up_distinct_list]='up_distinct'
+    # up_overlaped: wt_min<prod_min<wt_max<prod_max
+    up_overlaped_list=gene_enz_fva_result[(gene_enz_fva_result['wt_min']<gene_enz_fva_result['prod_min'])&(gene_enz_fva_result['prod_min']<gene_enz_fva_result['wt_max'])&(gene_enz_fva_result['wt_max']<gene_enz_fva_result['prod_max'])].index.tolist()
+    df_gene_euvr_result[up_overlaped_list]='up_overlaped'
+    # down_distinct: wt_min >= prod_max > 0
+    down_distinct_list=gene_enz_fva_result[(gene_enz_fva_result['wt_min']>=gene_enz_fva_result['prod_max'])&(gene_enz_fva_result['prod_max']>0)].index.tolist()
+    df_gene_euvr_result[down_distinct_list]='down_distinct'
+    # down_overlaped: prod_min<wt_min<prod_max<wt_max
+    down_overlaped_list=gene_enz_fva_result[(gene_enz_fva_result['prod_min']<gene_enz_fva_result['wt_min'])&(gene_enz_fva_result['wt_min']<gene_enz_fva_result['prod_max'])&(gene_enz_fva_result['prod_max']<gene_enz_fva_result['wt_max'])].index.tolist()
+    df_gene_euvr_result[down_overlaped_list]='down_overlaped'
+    # undistinguishable: fill other gene candidates as undistinguishable
+    df_gene_euvr_result.fillna('undistinguishable',inplace=True)
+
+    return df_gene_euvr_result
+
+
+
+def minprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-10):
     '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
     para:
         model: must be ETFL model
@@ -23,12 +56,12 @@ def minprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-
     return:
         a pandas series of protein concentration
         '''
-    model.reactions.get_by_id(c_source).bounds = -c_uptake - tol, -c_uptake + tol
+    model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
     # 1.Optimize for a given objective
     model.objective = target
     model.objective_direction = 'max'
     sol = safe_optim(model)
-    max_obj = sol.fluxes[target]
+    max_obj = sol.objective_value
 
     # 2.Fix optimal value for objective and minimize total protein usage
     if sol.status == 'optimal':
@@ -44,7 +77,7 @@ def minprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-
             prot_conc[enzID] = model.enzymes.get_by_id(enzID).scaled_X
         # restore the original bounds and objective
         model.reactions.get_by_id(target).bounds = 0, 1000
-        model.objective = model.growth_reaction.id
+        model.objective = target
         model.objective_direction = 'max'
         return prot_conc
 

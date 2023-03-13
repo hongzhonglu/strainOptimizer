@@ -20,6 +20,7 @@ def minprotFBA(model, target,c_source,c_uptake=1, tol=1e-6,model_type='etfl'):
     - c_source: (str) reaction ID for the main carbon source uptake reaction
     - c_uptake: (float) uptake rate for the main carbon source (default: 1)
     - tol: (float) numerical tolerance for fixing bounds(default: 1e-6)
+    - prot_conc_output: (bool) whether to output protein concentration (default: False)
     - model_type: (str) type of model to optimize:'etfl'/'ecGEM' (default: 'etfl')
 
     Returns:
@@ -34,7 +35,7 @@ def minprotFBA(model, target,c_source,c_uptake=1, tol=1e-6,model_type='etfl'):
     model.objective = target
     model.objective_direction = 'max'
     sol = safe_optim(model)
-    max_obj = sol.fluxes[target]
+    max_obj = sol.objective_value
 
     # 2.Fix optimal value for objective and minimize total protein usage
     if sol.status == 'optimal':
@@ -317,10 +318,5 @@ def run_FSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,model_type='
     results.pop('flux_MAX', None)
 
     return results
-
-
-
-
-
 
 
