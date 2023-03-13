@@ -10,7 +10,7 @@ from collections import namedtuple
 import pandas as pd
 import numpy  as np
 
-from etfl.io.json import load_json_model
+from etfl.io.json import load_json_model, save_json_model
 
 solver = 'optlang-gurobi'
 
@@ -33,13 +33,13 @@ gc_growth=ecoli.constraints["GC_Biomass_Ecoli_core"]
 ecoli.constraints["GC_Biomass_Ecoli_core"].ub= 3.0
 
 # change upper bound of the constant allocation
-pro_ratio = 0.051248
+pro_ratio = 0.051248*1.5
 xx = ecoli.constant_allocation.enzyme_fix
-xx.kwargs = {'ub': pro_ratio*0.75, 'lb': pro_ratio*0.75}
+xx.kwargs = {'ub': pro_ratio, 'lb': pro_ratio}
 ecoli.constant_allocation.enzyme_fix = xx
 cc = ecoli.constant_allocation.enzyme_fix
-cc.constraint.ub = pro_ratio*0.75
-cc.constraint.lb = pro_ratio*0.75
+cc.constraint.ub = pro_ratio
+cc.constraint.lb = pro_ratio
 
 ecoli.constant_allocation.enzyme_fix = cc
 """
@@ -56,11 +56,12 @@ sol = ecoli.optimize()
 
 # remove unused genes and then further test model function
 gene_list = []
-for xx in ecoli.enzymes:
-    print(xx.composition.keys())
-    gene_list.append(list(xx.composition.keys()))
+for xx in ecoli.transcription_reactions:
+    print(xx.id)
+    gene = xx.id.replace("_transcription", "")
+    gene_list.append(gene)
 
-gene_list = sum(gene_list, [])
+#gene_list.append('b3739')
 remove_gene = []
 for gene in ecoli.genes:
     if gene.id not in gene_list:
@@ -68,6 +69,14 @@ for gene in ecoli.genes:
         remove_gene.append(gene.id)
 for xx in remove_gene:
     ecoli.genes.remove(xx)
+
+# save and test the model
+save_json_model(ecoli, "../models/ecoli_core_curated.json")
+ecoli = load_json_model("../models/ecoli_core_curated.json", solver=solver)
+sol_test = ecoli.optimize()
+
+
+
 
 
 
@@ -190,7 +199,15 @@ ecoli.objective.direction = 'max'
 sol2 = ecoli.optimize()
 
 
+# flux variability analysis under the above max production
+# before analysis, fix the bounds of production rate
+ecoli.reactions.get_by_id('EX_succ_e').bounds = sol2.objective_value*0.8, sol2.objective_value
 
+from pytfa.analysis import  variability_analysis
+from etfl.optim.variables import mRNAVariable, EnzymeVariable
+variables = EnzymeVariable
+eva = variability_analysis(ecoli, variables)
+eva_rxn = variability_analysis(ecoli, kind='reactions')
 
 
 
