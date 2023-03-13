@@ -23,7 +23,7 @@ ecoli = load_json_model('../models/ecoli_core.json', solver=solver)
 
 growth_reaction_id = 'Biomass_Ecoli_core'
 
-glucose_uptake = -1
+glucose_uptake = -10
 ecoli.reactions.EX_glc__D_e.lower_bound = glucose_uptake
 ecoli.reactions.EX_glc__D_e.upper_bound = 0
 # issue in growth coupling
@@ -54,14 +54,86 @@ ecoli.constant_allocation.prot_fix = cc
 sol = ecoli.optimize()
 
 
+# remove unused genes and then further test model function
+gene_list = []
+for xx in ecoli.enzymes:
+    print(xx.composition.keys())
+    gene_list.append(list(xx.composition.keys()))
+
+gene_list = sum(gene_list, [])
+remove_gene = []
+for gene in ecoli.genes:
+    if gene.id not in gene_list:
+        print(gene.id)
+        remove_gene.append(gene.id)
+for xx in remove_gene:
+    ecoli.genes.remove(xx)
+
+
+
+
+# how to add constraint
+from etfl.optim.constraints import ModelConstraint
+from pytfa.optim.utils import symbol_sum
+
+
+ecoli.objective = symbol_sum([ecoli.reactions.get_by_id(x.id).forward_variable + ecoli.reactions.get_by_id(x.id).reverse_variable for x in ecoli.reactions if x.id == 'EX_glc__D_e'])
+ecoli.objective_direction = 'min'
+ecoli.slim_optimize()
+
+
+upt = 2
+tol = 0.02
+#expr0 = ecoli.objective.expression
+expr0 = symbol_sum([ecoli.reactions.get_by_id(x.id).forward_variable + ecoli.reactions.get_by_id(x.id).reverse_variable for x in ecoli.reactions if x.id == 'EX_glc__D_e'])
+sub_cons = ecoli.add_constraint(kind=ModelConstraint,
+                                hook=ecoli,
+                                expr=expr0,
+                                id_='fix_substrate',
+                                lb=upt - abs(tol * upt),
+                                ub=upt + abs(tol * upt),)
+# note: for this kind of constraint, MODC_fix_substrate, will be the name of constraint in the model
+# check the constraints
+# new_cons = ecoli.constraints['fix_substrate']
+ecoli.objective = "Biomass_Ecoli_core"
+ecoli.objective_direction = 'max'
+sol = ecoli.optimize()
+# if removing the constraints
+#ecoli.remove_constraint(sub_cons)
+#sol = ecoli.optimize()
+
+
+
+
+# how to add enzyme absolute concentration as constraits
+from etfl.optim.variables import EnzymeVariable
+from etfl.optim.constraints import ConstantAllocation
+def constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme='EZ_TPI', ub0=1):
+    # a function to add a constraint on total amount of enzymes based on their
+    # fraction from total amount of proteins (should be before adding dummy)
+    enz_vars = model.get_variables_of_type(EnzymeVariable)
+    #enz_vars = [x for x in enz_vars if x.name not in exclusion]
+    single_vars = [x for x in enz_vars if x.name == select_enzyme]
+    expr = symbol_sum([x for x in single_vars])
+    model.add_constraint(kind=ModelConstraint,
+                         hook=model,
+                         expr=expr,
+                         id_='enzyme_fix_' + select_enzyme,
+                         lb=0,  # cannot be negative
+                         ub=0) # once this value is changed, it can't be replaced by the new value?
+    ecoli.constraints["MODC_enzyme_fix_" + select_enzyme].ub = ub0
+    return model
+
+# test the function
+ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme = 'EZ_TPI', ub0=0)
+sol = ecoli.optimize()
+
 
 
 
 
 # output fluxes and enzyme concentration
 # how to output the pipetide concentration
-
-
 def prep_sol(substrate_uptake, model, GLC_RXN_ID='r_1714'):
     from etfl.analysis.utils import enzymes_to_peptides_conc
     ret = {'obj':model.solution.objective_value,
@@ -85,6 +157,39 @@ solution = prep_sol(substrate_uptake=glucose_uptake, model=ecoli, GLC_RXN_ID='EX
 solution2 = pd.DataFrame(solution)
 solution2.columns =['value']
 solution2.to_excel("../outputs/solution_for_core_ecoli.xlsx")
+
+
+# predict the maximum yield of product
+#  add a sink reaction
+from cobra import Reaction
+dict4 = {ecoli.metabolites.get_by_id('mal__L_c'): -1}
+reaction = Reaction('exchange_malic_acid')
+reaction.name = 'exchange_malic_acid'
+reaction.subsystem = 'new added'
+reaction.lower_bound = 0.  # This is the default
+reaction.upper_bound = 1000.  # This is the default
+reaction.EC = ''
+reaction.add_metabolites(dict4)
+reaction.gene_reaction_rule = ''
+ecoli.add_reactions([reaction])
+# firstly set growth as the objective function
+ecoli.objective = "Biomass_Ecoli_core"
+ecoli.objective_direction = 'max'
+growth = ecoli.optimize()
+# fix growth at 80% of its max value
+ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = growth.objective_value*0.8, growth.objective_value*0.8
+
+# set the metabolite production（malic acid） as the objective function
+ecoli.objective = 'exchange_malic_acid'
+ecoli.objective.direction = 'max'
+sol1 = ecoli.optimize()
+
+# set the metabolite production（succinate） as the objective function
+ecoli.objective = 'EX_succ_e'
+ecoli.objective.direction = 'max'
+sol2 = ecoli.optimize()
+
+
 
 
 
