@@ -141,6 +141,33 @@ def chemostatSimulation(model0, D0):
     return solution3
 
 
+def chemostatSimulationETFL(model0, D0):
+    """
+    This funcion is used to simulate the chemostat growth of yeast
+    Actually this function is general to solve the ecGEMs
+    :param model0: a ecGEMs
+    :param D0: a growth rate
+    :return: solution of fluxes
+    """
+    growth = D0
+    with model0:
+        # set growth
+        model0.reactions.get_by_id("r_2111").bounds = (growth, growth)
+        # minimization glucose uptake rate
+        model0.reactions.get_by_id("r_1714").bounds = (-1000, 1000)  # open the glucose
+        model0.objective = {model0.reactions.r_1714: -1}
+
+        solution2 = model0.optimize()
+        GR = solution2.fluxes["r_1714_REV"]  # get the glucose uptake rate
+        model0.reactions.get_by_id("r_1714_REV").bounds = (GR, GR * 1.001)
+        model0.objective = {model0.reactions.prot_pool_exchange: -1}
+        solution3 = model0.optimize()
+    return solution3
+
+
+
+
+
 
 def simulationCompare(model_in, growth_in, objective):
     """
