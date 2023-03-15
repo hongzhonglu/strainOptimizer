@@ -8,6 +8,7 @@ import pandas as pd
 import fseof
 from ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,enzymeFVA,genelist_to_enzymelist,minprotFBA_prot_conc,compare_EUVR
 from etfl.optim.utils import safe_optim
+from find_min_sets import find_min_set
 
 def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
     '''
@@ -18,7 +19,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
         productName: product name(used to find the leak reactions)
         c_source: carbon source exchange reaction ID
         c_uptake: carbon source uptake rate
-    :param expYield: experimental yield of the target product
+    :param expYield: experimental yield of the biomass growth
     :param action_thresholds: a list of three thresholds for gene targets:
         1. KO threshold
         2. KD threshold
@@ -85,10 +86,8 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     results['groups'] = groups
 
 
-
     # 5.- enzyme usage variety analysis(EUVA)
     step += 1
-    step = step + 1
     print(str(step) + '.-  **** Running EUVA analysis ****')
 
     # get target enzyme list
@@ -172,14 +171,14 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     oe_candidates=results['geneTable'][results['geneTable']['actions']=='OE'].index.tolist()
     futile_candidates=gene_enz_fva_result[(gene_enz_fva_result['prod_min']==0) & (gene_enz_fva_result['prod_minprot']==0)].index.tolist()
     futile_oe_toremove=list(set(oe_candidates).intersection(set(futile_candidates)))
-    results['geneTable']=results['geneTable'].drop(futile_oe_toremove)
+    results['gene_enz_fva_result']=results['gene_enz_fva_result'].drop(futile_oe_toremove)
     print('  - Discard OE targets with min=parsimonious=0: ' + str(len(futile_oe_toremove)) + ' targets removed')
 
     # 5.3.2 Discard enzymes essential for production from KO target candidates(lb>0).
     ko_candidates=results['geneTable'][results['geneTable']['actions']=='KO'].index.tolist()
     essential_candidates=gene_enz_fva_result[gene_enz_fva_result['prod_min']>0].index.tolist()
     essential_ko_toremove=list(set(ko_candidates).intersection(set(essential_candidates)))
-    results['geneTable']=results['geneTable'].drop(essential_ko_toremove)
+    results['gene_enz_fva_result']=results['gene_enz_fva_result'].drop(essential_ko_toremove)
     print('  - Discard KO targets with min>0: ' + str(len(essential_ko_toremove)) + ' targets removed')
 
     # 5.3.3 Discard isoenzyme groups that contain an optimal isoform for biomass formation from KD and KO target candidates.
@@ -191,23 +190,23 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
         if group_enz_fva_result['prod_minprot'].max()>0 and group_enz_fva_result['prod_minprot'].min()==0:
             iso_group=iso_group+g_group
     iso_group_toremove=list(set(kd_ko_candidates).intersection(set(iso_group)))
-    results['geneTable']=results['geneTable'].drop(iso_group_toremove)
+    results['gene_enz_fva_result']=results['gene_enz_fva_result'].drop(iso_group_toremove)
     print('  - Discard KD and KO targets that belong to isoenzyme groups with optimal isoform for biomass formation: ' + str(len(iso_group_toremove)) + ' targets removed')
 
     # 5.3.4  Discard enzymes with inconsistent result between EUVA and fseof
     # remove discarded genes according to EUVA results
-    results['gene_enz_fva_result']=results['gene_enz_fva_result'].loc[results['geneTable'].index.tolist(),:]
-    gene_euvr_compare=compare_EUVR(results['gene_enz_fva_result'])
+    # results['gene_enz_fva_result']=results['gene_enz_fva_result'].loc[results['geneTable'].index.tolist(),:]
+    gene_euvr_compare=compare_EUVR(gene_enz_fva_result=results['gene_enz_fva_result'])
 
     euva_up_List=gene_euvr_compare[gene_euvr_compare.str.contains('up_')].index.tolist()
     euva_down_List=gene_euvr_compare[gene_euvr_compare.str.contains('down_')].index.tolist()
     fseof_up_List=results['geneTable'][results['geneTable']['actions']=='OE'].index.tolist()
-    fseof_down_List=results['geneTable'][results['geneTable']['actions'].isin(['KD','OE'])].index.tolist()
+    fseof_down_List=results['geneTable'][results['geneTable']['actions'].isin(['KD','KO'])].index.tolist()
     # remove genes both in euva_up_List&fseof_down_List, euva_down_List&fseof_up_List
     euva_up_fseof_down=list(set(euva_up_List).intersection(set(fseof_down_List)))
     euva_down_fseof_up=list(set(euva_down_List).intersection(set(fseof_up_List)))
     euva_inconsistent_toremove=euva_up_fseof_down+euva_down_fseof_up
-    results['geneTable']=results['geneTable'].drop(euva_inconsistent_toremove)
+    results['gene_enz_fva_result']=results['gene_enz_fva_result'].drop(euva_inconsistent_toremove)
     gene_euvr_compare=gene_euvr_compare.drop(euva_inconsistent_toremove)
     print('  - Discard targets with inconsistent result between EUVA and fseof: ' + str(len(euva_inconsistent_toremove)) + ' targets removed')
     results['gene_euvr_compare']=gene_euvr_compare
@@ -222,12 +221,28 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     genetable.loc[leval1_list,'target_priority_leval']=1
     genetable.loc[leval2_list,'target_priority_leval']=2
     genetable.loc[leval3_list,'target_priority_leval']=3
+    genetable['target_priority_leval'].fillna('removed by EUVA',inplace=True)
     results['geneTable']=genetable
     print('  - Rank targets by priority levels according to EUVA results: ' + str(len(leval1_list)) + ' targets in level 1, ' + str(len(leval2_list)) + ' targets in level 2, ' + str(len(leval3_list)) + ' targets in level 3')
 
-
     # 6.- combine candidate targets
+    step=step+1
+    print(str(step) + '.    **** Combine candidate targets ****')
+    # fix substrate uptake rate
+    c_source=modelParam['c_source']
+    c_uptake=modelParam['c_uptake']
+    targetID=modelParam['targetID']
+    candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin([1.0,2.0])].index.tolist()
+    print("Finding the minimal set of %s candidates to achieve the max target production yield" %len(candidatesID_list))
+    # find minmal sets of targets
+    min_set_analysis_result,optimal_prod_result=find_min_set(model=model,c_source=c_source,c_uptake=c_uptake,expYield=expYield,
+                                            targetID=targetID,geneIDlist=candidatesID_list,gene_enz_fva_result=results['gene_enz_fva_result'],
+                                            gene_enz_dict=results['gene_enz_dict'])
+    # print('  - Minimal set of targets: %s'%len(min_set_analysis_result[min_set_analysis_result['score']<1.0]))
+    results['min_set_analysis_result']=min_set_analysis_result
+    results['optimal_prod_result']=optimal_prod_result
 
 
     return results
+
 
