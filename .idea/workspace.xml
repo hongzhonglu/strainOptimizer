@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="070b63d6-829e-449a-bb44-4daeae40ea39" name="Default Changelist" comment="" />
+    <list default="true" id="070b63d6-829e-449a-bb44-4daeae40ea39" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/models/ecoli/ecoli_core.json" beforeDir="false" afterPath="$PROJECT_DIR$/examples/models/ecoli/ecoli_core.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/models/ecoli/ecoli_core_curated.json" beforeDir="false" afterPath="$PROJECT_DIR$/examples/models/ecoli/ecoli_core_curated.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/test_core_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test_core_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -19,10 +25,11 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/ETFLdesigner/util" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/examples/models/ecoli" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/examples/models/ecoli" />
       <recent name="$PROJECT_DIR$/src/ETFLdesigner/util" />
       <recent name="$PROJECT_DIR$/examples" />
     </key>

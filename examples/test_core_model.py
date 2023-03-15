@@ -3,7 +3,9 @@ import sys
 import os
 sys.path.append('/Users/xluhon/Documents/GitHub/yetfl/code')
 sys.path.append('/Users/xluhon/Documents/GitHub/etfl')
-os.chdir('/Users/xluhon/Documents/GitHub/yetfl/code')
+
+# check and set the current directory
+#os.chdir('/Users/xluhon/Documents/GitHub/ETFLdesigner')
 
 
 from collections import namedtuple
@@ -17,7 +19,7 @@ solver = 'optlang-gurobi'
 # ec_cobra.reactions.ATPM.lower_bound = 0
 
 #ecoli = load_json_model('../models/ME_ecoli_coreModel.json', solver=solver)
-ecoli = load_json_model('../models/ecoli_core.json', solver=solver)
+ecoli = load_json_model('examples/models/ecoli/ecoli_core.json', solver=solver)
 
 
 
@@ -39,7 +41,8 @@ xx.kwargs = {'ub': pro_ratio, 'lb': pro_ratio}
 ecoli.constant_allocation.enzyme_fix = xx
 cc = ecoli.constant_allocation.enzyme_fix
 cc.constraint.ub = pro_ratio
-cc.constraint.lb = pro_ratio
+#cc.constraint.lb = pro_ratio # as total protein resource is fixed, here we not fix the lower bound
+cc.constraint.lb = 0
 
 ecoli.constant_allocation.enzyme_fix = cc
 """
@@ -71,8 +74,8 @@ for xx in remove_gene:
     ecoli.genes.remove(xx)
 
 # save and test the model
-save_json_model(ecoli, "../models/ecoli_core_curated.json")
-ecoli = load_json_model("../models/ecoli_core_curated.json", solver=solver)
+save_json_model(ecoli, "examples/models/ecoli_core_curated.json")
+ecoli = load_json_model("examples/models/ecoli_core_curated.json", solver=solver)
 sol_test = ecoli.optimize()
 
 
@@ -165,7 +168,7 @@ def prep_sol(substrate_uptake, model, GLC_RXN_ID='r_1714'):
 solution = prep_sol(substrate_uptake=glucose_uptake, model=ecoli, GLC_RXN_ID='EX_glc__D_e')
 solution2 = pd.DataFrame(solution)
 solution2.columns =['value']
-solution2.to_excel("../outputs/solution_for_core_ecoli.xlsx")
+solution2.to_excel("examples/result/solution_for_core_ecoli.xlsx")
 
 
 # predict the maximum yield of product
