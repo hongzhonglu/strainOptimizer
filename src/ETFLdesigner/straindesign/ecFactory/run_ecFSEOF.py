@@ -6,7 +6,7 @@ sys.path.append(r"D:\code\github\etfl\code_etfl\ETFLdesigner\ecFactory")
 
 import pandas as pd
 import fseof
-from ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,enzymeFVA,genelist_to_enzymelist,minprotFBA_prot_conc,compare_EUVR
+from ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,enzymeVA,genelist_to_enzymelist,minprotFBA_prot_conc,compare_EUVR
 from etfl.optim.utils import safe_optim
 from find_min_sets import find_min_set
 
@@ -107,7 +107,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     print('  - Fixed suboptimal biomass production, according to provided experimental yield')
     # Fix suboptimal experimental biomass yield conditions
     fix_gr = expYield * gluc_MW* c_uptake
-    model.growth_reaction.bounds = fix_gr-tol, fix_gr+tol
+    model.growth_reaction.bounds = fix_gr, fix_gr
     print(' Fix suboptimal experimental biomass = ' + str(fix_gr) + ' h-1')
     print('  - Maximize the production rate of the target product')
     # set maximize production rate as objective
@@ -116,12 +116,13 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     model.objective_direction = 'max'
     sol=safe_optim(model)
     max_prod=sol.objective_value
+    # run parsimonious protein usages FBA for max production
+    prod_minprotFBA_protconc = minprotFBA_prot_conc(model=model, target=targetID, enzymeIDlist=target_enz_list,
+                                                    c_source=c_source, c_uptake=c_uptake, tol=tol)
     # fix max production rate
     model.reactions.get_by_id(targetID).bounds = max_prod-tol, max_prod+tol
-    # run parsimonious protein usages FBA for max production
-    prod_minprotFBA_protconc=minprotFBA_prot_conc(model=model,target=targetID,enzymeIDlist=target_enz_list,c_source=c_source,c_uptake=c_uptake,tol=tol)
     # run enzyme usage variety analysis
-    prod_enz_fva_result=enzymeFVA(model=model,enzymeIDlist=target_enz_list)
+    prod_enz_fva_result=enzymeVA(model=model,target=targetID,enzymeIDlist=target_enz_list,c_source=c_source,c_uptake=c_uptake,fraction_of_optimum=0.99,obj_direction='max')
     prod_enz_fva_result['minprotFBA']=prod_minprotFBA_protconc
     results['prod_enz_fva_result']=prod_enz_fva_result      # can be deleted
     # release biomass and production constraints
@@ -139,13 +140,13 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     model.objective_direction = 'max'
     sol=safe_optim(model)
     max_gr=sol.objective_value
+
     print(' Max biomass = ' + str(max_gr) + ' h-1')
-    # fix max biomass production rate
-    model.growth_reaction.bounds = max_gr-tol, max_gr+tol
     # run parsimonious protein usages FBA for max growth
     wt_minprotFBA_protconc=minprotFBA_prot_conc(model=model,target=model.growth_reaction.id,enzymeIDlist=target_enz_list,c_source=c_source,c_uptake=c_uptake)
     # run enzyme usage variety analysis
-    wt_enz_fva_result=enzymeFVA(model=model,enzymeIDlist=target_enz_list)
+    wt_enz_fva_result=enzymeVA(model=model,target=model.growth_reaction.id,enzymeIDlist=target_enz_list,c_source=c_source,c_uptake=c_uptake,fraction_of_optimum=0.99,obj_direction='max')
+
     wt_enz_fva_result['minprotFBA']=wt_minprotFBA_protconc
     results['wt_enz_fva_result']=wt_enz_fva_result     # can be deleted
     # release biomass and production constraints

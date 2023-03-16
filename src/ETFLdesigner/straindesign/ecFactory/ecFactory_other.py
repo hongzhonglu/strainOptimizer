@@ -115,19 +115,29 @@ def genelist_to_enzymelist(model,genelist):
     return enzlist,gene_enz_dict
 
 
-def enzymeFVA(model,enzymeIDlist,fraction_of_optimum=0.95):
+def enzymeVA(model,target,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0.99,obj_direction='max'):
     '''do FVA for a list of enzymes
     para:
         model: must be ETFL model
+        target: the target reaction ID
         enzymeIDlist: a list of enzyme ID
+        c_source: the carbon source ID
+        c_uptake: the carbon source uptake rate(default=1 mmol/gDW/h)
         fraction_of_optimum: Requires that the objective value is at least the
-            fraction times maximum objective value.Must be <= 1.0. (default 0.95)
+            fraction times maximum objective value.Must be <= 1.0. (default 0.99)
+        obj_direction: the direction of the objective function(default='max')
+
     return:
         a dataframe of FVA result
         '''
-    # get the objective function
-    objective = model.objective
-    # get all enzyme variable
+    model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
+    # 1.Optimize a given objective
+    model.objective = target
+    model.objective_direction = obj_direction
+    sol = safe_optim(model)
+    obj_value = sol.objective_value
+
+    # 2. get all enzyme variable
     all_enz=model.get_variables_of_type('EnzymeVariable')
     all_enzIDlist=[enz.id for enz in all_enz]
     # get the target enzyme list
@@ -137,20 +147,17 @@ def enzymeFVA(model,enzymeIDlist,fraction_of_optimum=0.95):
             target_enzlist[enzID]=model.enzymes.get_by_id(enzID).variable
         else:
             print(f"can't find Enzyme {enzID} in the {model.name}")
-    sol=safe_optim(model)
-    print(f"the objective value is {sol.objective_value}")
-    print(f"{model.objective_direction} objective expression {model.objective.expression}")
 
-    # fix old objective value
+    # 3. fix old objective value and add constraint
     if model.solver.objective.direction == "max":
         fva_old_objective = model.problem.Variable(
             "fva_old_objective",
-            lb=fraction_of_optimum * model.solver.objective.value,
+            lb=fraction_of_optimum * obj_value,
         )
     else:
         fva_old_objective = model.problem.Variable(
             "fva_old_objective",
-            ub=fraction_of_optimum * model.solver.objective.value,
+            ub=fraction_of_optimum *obj_value,
         )
     fva_old_obj_constraint = model.problem.Constraint(
         model.solver.objective.expression - fva_old_objective,
@@ -160,17 +167,17 @@ def enzymeFVA(model,enzymeIDlist,fraction_of_optimum=0.95):
     )
     model.add_cons_vars([fva_old_objective, fva_old_obj_constraint])
 
-    # do FVA
+    # 5.do enzyme variety analysis
     results = {'min':{}, 'max':{}}
     for sense in ['min','max']:
         for k,var in tqdm(target_enzlist.items(), desc=sense+'imizing'):
             model.logger.debug(sense + '-' + k)
             results[sense][k] = _variability_analysis_element(model,var,sense)
 
-    # remove fixed constraint and old objective
+    # 6.remove fixed constraint and old objective
     model.remove_cons_vars([fva_old_objective, fva_old_obj_constraint])
     # restore old objective
-    model.objective = objective
+    model.objective = target
     df = pd.DataFrame(results)
     df.rename(columns={'min':'minimum','max':'maximum'}, inplace = True)
 
@@ -222,7 +229,7 @@ def find_leaks(candidates, targetID, model,product_name):
                 consuming_rxnIDs.remove(rxnID)
                 continue
             else:
-                # find gene taget for the rxn
+                # find gene related to the rxn
                 geneList=list(rxn.genes)
                 geneIDlist=[gene.id for gene in geneList]
                 # remove gene that has been included in candidates

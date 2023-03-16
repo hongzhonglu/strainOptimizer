@@ -9,9 +9,10 @@ import pandas as pd
 import numpy as np
 from etfl.optim.constraints import ModelConstraint
 from pytfa.optim.utils import symbol_sum
+from etfl.optim.utils import safe_optim
 
 
-def cal_max_yield(model,targetID,c_source,c_uptake,tol=1e-10):
+def cal_max_yield(model,targetID,c_source,c_uptake,tol=1e-6):
     '''calculate the maximum yield of the target product
     parameters:
         model: ETFL model
@@ -23,18 +24,27 @@ def cal_max_yield(model,targetID,c_source,c_uptake,tol=1e-10):
     '''
     # 1. fix carbon source uptake
     model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
-    # 2. calculate optimal production yield
-    model.objective=model.reactions.get_by_id(targetID)
+    # 2. calculate optimal production rate
+    model.objective=targetID
     model.objective_direction='max'
-    max_prod=model.slim_optimize()
-    # 3. fix the max target product production and minimize the C source uptake
-    model.reactions.get_by_id(targetID).bounds=max_prod-tol,max_prod+tol
-    model.objective=c_source
-    model.objective_direction='min'
-    opt_c_uptake=-model.slim_optimize()
-    max_yield=max_prod/opt_c_uptake
+    sol=safe_optim(model)
+    max_rate=sol.objective_value
+    if model.solver.status == 'infeasible':
+        return 0,0
+    else:
+        # 3. fix the max target product production and minimize the C source uptake
+        model.reactions.get_by_id(targetID).bounds=max_rate-tol,max_rate
+        model.objective=c_source
+        model.objective_direction='max'
+        opt_c_uptake=-model.slim_optimize()
+        max_yield=max_rate/opt_c_uptake
 
-    return max_yield, max_prod
+        # 4. reset the original constraints
+        model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
+        model.objective=model.growth_reaction.id
+        model.objective_direction='max'
+
+        return max_yield, max_rate
 
 
 def constrain_enz_conc(model,enzymes_bounds):
@@ -63,12 +73,13 @@ def constrain_enz_conc(model,enzymes_bounds):
     return model
 
 
-def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_fva_result,gene_enz_dict,tol=1e-10):
+def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_fva_result,gene_enz_dict,tol=1e-6):
     #step 1. construct optimal production mutant
     mutant_model=model.copy()
     target_genes_enzfva_result=gene_enz_fva_result.loc[geneIDlist]
     df_enz_bounds=pd.DataFrame(columns=['lb','ub'])
     for geneID in geneIDlist:
+        # enzID=str(gene_enz_dict.loc[geneID,:].values).split('\'')[1]
         enzID=gene_enz_dict[geneID][0]
         df_enz_bounds.loc[enzID,'lb']=target_genes_enzfva_result.loc[geneID,'prod_minprot']
         df_enz_bounds.loc[enzID,'ub']=target_genes_enzfva_result.loc[geneID,'prod_max']
@@ -91,6 +102,7 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
     #step 2. respectively convert each enzyme concentraction to WT-like constraints,and calculate the production yield ,and production rate
     df_min_set_result=pd.DataFrame(columns=['mod_prod_yield','mod_prod_rate','score'])
     for gene in geneIDlist:
+        # enzID = str(gene_enz_dict.loc[gene, :].values).split('\'')[1]
         enzID=gene_enz_dict[gene][0]
         enz_conc_constriant=mutant_model.constraints['MODC_enz_conc_'+enzID]
         prod_ub=enz_conc_constriant.ub
