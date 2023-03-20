@@ -132,7 +132,7 @@ def constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme='EZ_TPI', u
                          expr=expr,
                          id_='enzyme_fix_' + select_enzyme,
                          lb=0,  # cannot be negative
-                         ub=0) # once this value is changed, it can't be replaced by the new value?
+                         ub=0) # once this value is changed, it can't be replaced by the new value
     ecoli.constraints["MODC_enzyme_fix_" + select_enzyme].ub = ub0
     return model
 
@@ -202,9 +202,47 @@ ecoli.objective.direction = 'max'
 sol2 = ecoli.optimize()
 
 
+# conduct the flux variability analysis
+# in the current analysis, it seems that it not consider the scaling factor:
+from pytfa.analysis import  variability_analysis
+from etfl.optim.variables import mRNAVariable, EnzymeVariable
+from cobra.util.solver import set_objective
+variables = EnzymeVariable
+eva = variability_analysis(ecoli, variables)
+# merge it with the reference protein abundance
+eva.to_excel("examples/result/enzyme_fva_core_model.xlsx")
 
 
+solver = 'optlang-gurobi'
+ecoli = load_json_model("examples/models/ecoli/ecoli_core_curated.json", solver=solver)
+# definition of the initial state:
+# firstly set growth as the objective function
+ecoli.objective = "Biomass_Ecoli_core"
+ecoli.objective_direction = 'max'
+growth = ecoli.optimize()
+
+# evaluate the maximal growth under different glucose uptake rate
+substrate = range(1, 10)
+growth = []
+for s in substrate:
+    print(s)
+    ecoli.reactions.get_by_id('EX_glc__D_e').bounds = -s, 0
+    ecoli.optimize()
+    sol3 = ecoli.optimize()
+    v = sol3.objective_value
+    growth.append(v)
 
 
-
-
+# evaluate dummy enzyme usage under different growth
+growth = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8]
+dummy_pro_usage = []
+for g in growth:
+    print(g)
+    ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = g, g
+    obj_expr = symbol_sum([ecoli.enzymes.dummy_enzyme.variable])
+    set_objective(ecoli, obj_expr)
+    ecoli.objective_direction = 'max'
+    ecoli.optimize()
+    sol3 = ecoli.optimize()
+    dummy_pro = sol3.objective_value
+    dummy_pro_usage.append(dummy_pro)
