@@ -3,10 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="070b63d6-829e-449a-bb44-4daeae40ea39" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/models/ecoli/ecoli_core.json" beforeDir="false" afterPath="$PROJECT_DIR$/examples/models/ecoli/ecoli_core.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/models/ecoli/ecoli_core_curated.json" beforeDir="false" afterPath="$PROJECT_DIR$/examples/models/ecoli/ecoli_core_curated.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/test_core_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test_core_model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/util/model_process.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/ETFLdesigner/util/model_process.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

@@ -1,6 +1,30 @@
 from cobra.io import read_sbml_model
 from ETFLdesigner.util.mainFunction import *
 
+# function to remove genes from ETFL models
+def check_feasibility(model):
+    try:
+        growth = model.slim_optimize()
+    except KeyError:
+        # I don't know when it happens, but I kept it!
+        growth = np.nan
+
+    return growth
+
+
+# etfl model模拟敲除，阻断gene的 translation rxn
+def ko_gene(model, gene_id):
+    try:
+        the_trans = model.get_translation(gene_id)
+    except KeyError:
+        return None
+    initial_value = the_trans.upper_bound
+    the_trans.upper_bound = 0
+    # We check for the feasibilty of the problem
+    growth = check_feasibility(model)
+    the_trans.upper_bound = initial_value
+    return growth
+
 
 
 def getALLGEMgene():
