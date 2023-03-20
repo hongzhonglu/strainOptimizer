@@ -1,11 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="070b63d6-829e-449a-bb44-4daeae40ea39" name="Default Changelist" comment="" />
+    <list default="true" id="070b63d6-829e-449a-bb44-4daeae40ea39" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/io/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/io/engines/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/model/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/model/data/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/model/mainFunction.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/model/model_process.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/omics/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/omics/integration/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/optimization/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/problems/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/simulation/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/solvers/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/data/essential_genes.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/data/s288c_gene_annotation_score.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/ecFactory/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/ecFactory/ecFactory_other.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/ecFactory/find_min_sets.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/ecFactory/fseof.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/ecFactory/run_ecFSEOF.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/models/ecYeastGEM_batch.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/models/ecoli_core.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/straindesign/models/yeast8_cEFL_2584_enz_128_bins__20221228_090737.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/util/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/util/mainFunction.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/util/model_process.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/util/protein_process.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ETFLdesigner/visualization/__init__.py" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -39,6 +76,7 @@
       <option name="presentableId" value="Default" />
       <updated>1677569864736</updated>
       <workItem from="1677569866293" duration="531000" />
+      <workItem from="1679144648264" duration="326000" />
     </task>
     <servers />
   </component>
