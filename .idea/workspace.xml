@@ -4,9 +4,6 @@
     <list default="true" id="070b63d6-829e-449a-bb44-4daeae40ea39" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/result/core_model_abundance.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/examples/result/core_model_abundance.xlsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/result/enzyme_fva_core_model.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/examples/result/enzyme_fva_core_model.xlsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/result/~$predicted_and_measured_proteomics.xlsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/test_core_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test_core_model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -38,6 +35,34 @@
       <recent name="$PROJECT_DIR$/src/ETFLdesigner/util" />
     </key>
   </component>
+  <component name="RunManager">
+    <configuration name="test_core_model_in_strain_design" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="ETFLdesigner" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/examples" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.test_core_model_in_strain_design" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -64,16 +89,5 @@
       </map>
     </option>
     <option name="oldMeFiltersMigrated" value="true" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/examples/test_core_model_in_strain_design.py</url>
-          <line>108</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>
