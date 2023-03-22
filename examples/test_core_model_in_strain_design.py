@@ -65,13 +65,23 @@ growth = ecoli.optimize()
 # fix growth at 50% of its max value
 ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = growth.objective_value*0.5, growth.objective_value*0.5
 
+# turn off by-product
+ecoli.reactions.get_by_id('EX_for_e').bounds = 0,  0
+ecoli.reactions.get_by_id('EX_ac_e').bounds = 0,  0
+
+
+
+
 # set the metabolite production（succinate） as the objective function
 ecoli.objective = 'EX_succ_e'
 ecoli.objective.direction = 'max'
 sol2 = ecoli.optimize()
+#ecoli.reactions.get_by_id('EX_succ_e').bounds = sol2.objective_value, sol2.objective_value
+ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 0
 
-# minimization the enyzme usage to get the protein abundance:
-ecoli.reactions.get_by_id('EX_succ_e').bounds = sol2.objective_value, sol2.objective_value
+
+
+# minimization the enzyme usage to get the protein abundance:
 obj_expr = symbol_sum([ecoli.enzymes.dummy_enzyme.variable])
 set_objective(ecoli, obj_expr)
 ecoli.objective_direction = 'max'
@@ -102,20 +112,23 @@ out_new = dict()
 for x,y in out.items():
     if "EZ_" in x:
         x_new = x.replace('EZ_', '')
-        out_new[x_new] = y
+        if x_new is not "dummy_enzyme":
+            out_new[x_new] = y
 all_enzyme_ID = out_new.keys()
 
 
-
-
-
-
-
 # give a disturbation
-ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = 0, growth.objective_value*0.5# first relax the above constraints
-ecoli.reactions.get_by_id('EX_succ_e').bounds = sol2.objective_value, 1000
-#ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme = 'EZ_TPI', ub0=0.005)
-ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme = 'EZ_PGI', ub0=0.00173*5)
+ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = 0, 3# first relax the above constraints
+ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 1000
+ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme = 'EZ_PGI', ub0=0.001657756*3)
+
+
+# calculate the max glucose uptake after disturbation
+ecoli.reactions.get_by_id('EX_glc__D_e').bounds = -10, 0
+
+
+
+
 
 
 # run MOMA of protein resource adjust
@@ -127,6 +140,13 @@ for id in all_enzyme_ID:
     xx = (ecoli.enzymes.get_by_id(id).variable - out_new[id])**2
     ss.append(xx)
 
+
+ss2 = []
+for id in all_enzyme_ID:
+    xx = (1-(ecoli.enzymes.get_by_id(id).variable + 1e-07)/(out_new[id] + 1e-07))**2
+    ss2.append(xx)
+
+
 """
 # this can't be used. ValueError: The given objective is invalid. Must be linear or quadratic.
 ss = []
@@ -134,9 +154,12 @@ for id in all_enzyme_ID:
     xx = abs(ecoli.enzymes.get_by_id(id).variable - out_new[id])
     ss.append(xx)
 """
-ecoli.objective = symbol_sum_MOMA(ss)
+
+ecoli.objective = symbol_sum_MOMA(ss2)
 ecoli.objective_direction = 'min'
 sol4 = ecoli.optimize()
+
+
 out2 = prep_sol(substrate_uptake=-10, model=ecoli)
 out_new2 = dict()
 for x,y in out2.items():
@@ -144,12 +167,13 @@ for x,y in out2.items():
         x_new = x.replace('EZ_', '')
         out_new2[x_new] = y
 
+
 df = pd.Series(out_new)
 df2 = pd.Series(out_new2)
 
 result = pd.concat([df, df2], axis=1)
 result.columns =['before','after']
-
+result.to_excel("examples/result/abundance_before_and_after_MOMA.xlsx")
 
 
 # plot
@@ -161,13 +185,10 @@ from scipy.stats import pearsonr
 plt.figure()
 sns.regplot(x=result['before'], y=result['after'], fit_reg=False)
 sns.regplot(x=np.log10(result['before']), y=np.log10(result['after']), fit_reg=False)
-plt.xlim(-10, -3)
-plt.ylim(-10, -3)
+plt.xlim(-10, 0)
+plt.ylim(-10, 0)
 plt.xlabel("log10(before)")
 plt.ylabel("log10(after)")
-
-
-
 
 
 

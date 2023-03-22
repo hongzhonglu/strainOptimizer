@@ -4,6 +4,8 @@
     <list default="true" id="070b63d6-829e-449a-bb44-4daeae40ea39" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/result/core_model_abundance.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/examples/result/core_model_abundance.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/result/~$core_model_abundance.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/result/~$enzyme_fva_core_model.xlsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -40,9 +42,6 @@
       <module name="ETFLdesigner" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/examples" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -59,6 +58,8 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.test_core_model_in_strain_design" />
+        <item itemvalue="Python.test_core_model_in_strain_design" />
         <item itemvalue="Python.test_core_model_in_strain_design" />
       </list>
     </recent_temporary>
