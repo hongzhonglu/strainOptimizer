@@ -13,7 +13,7 @@ from cobra.util.solver import set_objective
 import pandas as pd
 
 # function
-def prep_sol(substrate_uptake, model):
+def prep_sol(substrate_uptake, model,GLC_RXN_ID ='EX_glc__D_e'):
     ret = {'obj':model.solution.objective_value,
            'mu':model.solution.fluxes.loc[model.growth_reaction.id],
            'available_substrate':-1*substrate_uptake,
@@ -43,8 +43,8 @@ def constrain_enzymes_based_abs_abundance(model, select_enzyme='EZ_TPI', ub0=1):
                          id_='enzyme_fix_' + select_enzyme,
                          lb=0,  # cannot be negative
                          ub=0) # once this value is changed, it can't be replaced by the new value
-    ecoli.constraints["MODC_enzyme_fix_" + select_enzyme].ub = ub0
-    ecoli.constraints["MODC_enzyme_fix_" + select_enzyme].lb = ub0 # new
+    model.constraints["MODC_enzyme_fix_" + select_enzyme].ub = ub0
+    model.constraints["MODC_enzyme_fix_" + select_enzyme].lb = ub0 # new
     return model
 
 
@@ -105,7 +105,6 @@ result = pd.DataFrame({'enzymeID': pro_abundance.index, 'reference': pro_abundan
 result.to_excel("examples/result/core_model_abundance.xlsx")
 
 # obtain the reference protein abundance
-GLC_RXN_ID ='EX_glc__D_e'
 
 out = prep_sol(substrate_uptake=-10, model=ecoli)
 out_new = dict()

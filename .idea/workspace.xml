@@ -3,15 +3,19 @@
   <component name="ChangeListManager">
     <list default="true" id="070b63d6-829e-449a-bb44-4daeae40ea39" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/result/core_model_abundance.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/examples/result/core_model_abundance.xlsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/result/~$core_model_abundance.xlsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/result/~$enzyme_fva_core_model.xlsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -25,13 +29,14 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/examples/models/ecoli" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/examples" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/examples" />
       <recent name="$PROJECT_DIR$/examples/models/ecoli" />
       <recent name="$PROJECT_DIR$/src/ETFLdesigner/util" />
-      <recent name="$PROJECT_DIR$/examples" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src/ETFLdesigner/util" />
@@ -42,6 +47,9 @@
       <module name="ETFLdesigner" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/examples" />
       <option name="IS_MODULE_SDK" value="true" />
