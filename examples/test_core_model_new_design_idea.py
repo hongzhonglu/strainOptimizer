@@ -152,9 +152,6 @@ for ii, xx in enumerate(first_generation):
     print(growth,max, min)
 
 # save the dataset for the further analysis
-with open('examples/result/first_generation.txt', 'w') as f:
-    for line in first_generation:
-        f.write(f"{line}\n")
 # change the list into dataframe
 df = pd.DataFrame(fitness)
 df.columns =['max_growth','Pmax','Pmin']
@@ -169,6 +166,11 @@ for ii, xx in enumerate(first_generation):
     print(ii, xx)
     if ii in index0:
         first_generation_select.append(xx)
+
+# save the dataset for the further analysis
+with open('examples/result/first_generation_select.txt', 'w') as f:
+    for line in first_generation_select:
+        f.write(f"{line}\n")
 
 
 # double test
@@ -187,32 +189,80 @@ for ii, xx in enumerate(first_generation_select):
 
 
 
-# define the max production rate
-# fix growth at its max
-ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = 0.2, 0.2
-ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 1000
-# set the metabolite production（succinate） as the objective function. Then minimize the production:
-ecoli.objective = 'EX_succ_e'
-ecoli.objective.direction = 'max'
-qpmax = ecoli.optimize()
 
 
 
+# cross over and mutation
+# reinput datasets
+def stringToList(string):
+  listRes = list(string.split(","))
+  return listRes
+
+first_generation_select = []
+with open('examples/result/first_generation_select.txt') as f:
+    lines = f.readlines()
+for line in lines:
+    print(line)
+    line0=stringToList(line)
+    line0=[x.replace(' ', '').replace(']\n','').replace('[','') for x in line0]
+    line0=[int(x) for x in line0]
+    first_generation_select.append(line0)
 
 
+# example datasets
+example = first_generation_select[0]
+items = first_generation_select
+
+import random
+def crossover(parent1, parent2):
+    crossover_point = random.randint(0, len(example) - 1)
+    child1 = parent1[0:crossover_point] + parent2[crossover_point:]
+    child2 = parent2[0:crossover_point] + parent1[crossover_point:]
+
+    print("Performed crossover between two chromosomes")
+    return child1, child2
+
+# function to perform mutation on a chromosome
+def mutate(chromosome):
+    mutation_point = random.randint(0, len(example)-1)
+    if chromosome[mutation_point] == 0:
+        chromosome[mutation_point] = 1
+    else:
+        chromosome[mutation_point] = 0
+    print("Performed mutation on a chromosome")
+    return chromosome
 
 
+# parameters for genetic algorithm
+mutation_probability = 0.2
+
+# define parent
+parent1 = items[0]
+parent2 = items[1]
+child1, child2 = crossover(parent1, parent2)
+
+# perform mutation on the two new chromosomes
+if random.uniform(0, 1) < mutation_probability:
+    child1 = mutate(child1)
+if random.uniform(0, 1) < mutation_probability:
+    child2 = mutate(child2)
+
+child1_test = [x for x in child1 if x == 0]
+child2_test = [x for x in child2 if x == 0]
+
+new_datasets = [child1, child2] + first_generation_select
 
 
-
-
-
-
-
-
-
-
-
-
+# calculate  fitness again
+for ii, xx in enumerate(new_datasets):
+    print(ii, xx)
+    ss = xx
+    delete_gene = [x for x,y in zip(enzyme,xx) if y==0]
+    delete_gene = ['EZ_'+ x for x in delete_gene]
+    # update the model
+    new_model = constrain_enzymes_based_abs_abundance(model=ecoli.copy(), select_enzyme=delete_gene, ub0=0)
+    # solve the new model
+    growth, max, min = solveModel(model=new_model)
+    print(growth, max, min)
 
 

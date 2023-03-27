@@ -2,11 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="070b63d6-829e-449a-bb44-4daeae40ea39" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/examples/GA.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/result/~$abundance_before_and_after_MOMA.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pymoo.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/test_core_model_new_design_idea.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test_core_model_new_design_idea.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/ME modelyeast8_cEFL_2584_enz_128_bins__20221031_130538_20230314_101327.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/ME modelyeast8_cEFL_2584_enz_128_bins__20221031_130538_20230316_153440.log" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
