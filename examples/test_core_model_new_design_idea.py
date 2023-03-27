@@ -29,26 +29,29 @@ def prep_sol(substrate_uptake, model,GLC_RXN_ID ='EX_glc__D_e'):
     return ret #pd.Series(ret)
 
 def constrain_enzymes_based_abs_abundance(model, select_enzyme=['EZ_TPI'], ub0=1):
+
     from etfl.optim.variables import EnzymeVariable
     from etfl.optim.constraints import ModelConstraint
     # a function to add a constraint on total amount of enzymes based on their
-    # fraction from total amount of proteins (should be before adding dummy)
+        # fraction from total amount of proteins (should be before adding dummy)
     enz_vars = model.get_variables_of_type(EnzymeVariable)
-    #enz_vars = [x for x in enz_vars if x.name not in exclusion]
+    # enz_vars = [x for x in enz_vars if x.name not in exclusion]
     for en in select_enzyme:
         print(en)
         single_vars = [x for x in enz_vars if x.name == en]
         expr = symbol_sum([x for x in single_vars])
         model.add_constraint(kind=ModelConstraint,
-                             hook=model,
-                             expr=expr,
-                             id_='enzyme_fix_' + en,
-                             lb=0,  # cannot be negative
-                             ub=0)  # once this value is changed, it can't be replaced by the new value
+                                 hook=model,
+                                 expr=expr,
+                                 id_='enzyme_fix_' + en,
+                                 lb=0,  # cannot be negative
+                                 ub=0)  # once this value is changed, it can't be replaced by the new value
         model.constraints["MODC_enzyme_fix_" + en].ub = ub0
         model.constraints["MODC_enzyme_fix_" + en].lb = ub0  # new
-
     return model
+
+
+
 
 solver = 'optlang-gurobi'
 
@@ -62,13 +65,13 @@ ecoli = load_json_model("examples/models/ecoli/ecoli_core_curated.json", solver=
 # firstly set growth as the objective function
 
 # turn off by-product
-def solveModel(model=ecoli):
+def solveModel(model):
     import math
     model.reactions.get_by_id('EX_for_e').bounds = 0, 0
     model.reactions.get_by_id('EX_ac_e').bounds = 0, 0
     model.objective = "Biomass_Ecoli_core"
     model.objective_direction = 'max'
-    #growth = model.optimize()
+    # growth = model.optimize()
     growth = model.slim_optimize()
     if math.isnan(growth):
         qpmax = None
@@ -87,10 +90,6 @@ def solveModel(model=ecoli):
         model.objective.direction = 'min'
         qpmin = model.slim_optimize()
     return growth, qpmax, qpmin
-
-
-
-
 
 
 
@@ -152,13 +151,37 @@ for ii, xx in enumerate(first_generation):
     fitness.append(out)
     print(growth,max, min)
 
+# save the dataset for the further analysis
+with open('examples/result/first_generation.txt', 'w') as f:
+    for line in first_generation:
+        f.write(f"{line}\n")
+# change the list into dataframe
+df = pd.DataFrame(fitness)
+df.columns =['max_growth','Pmax','Pmin']
+df.to_excel('examples/result/first_generation_result.xlsx')
+
+# selection best one
+df_filter = df[df['Pmin'] > 0]
+index0 = list(df_filter.index)
+
+first_generation_select = []
+for ii, xx in enumerate(first_generation):
+    print(ii, xx)
+    if ii in index0:
+        first_generation_select.append(xx)
 
 
-
-
-
-
-
+# double test
+for ii, xx in enumerate(first_generation_select):
+    print(ii, xx)
+    ss = xx
+    delete_gene = [x for x,y in zip(enzyme,xx) if y==0]
+    delete_gene = ['EZ_'+ x for x in delete_gene]
+    # update the model
+    new_model = constrain_enzymes_based_abs_abundance(model=ecoli.copy(), select_enzyme=delete_gene, ub0=0)
+    # solve the new model
+    growth, max, min = solveModel(model=new_model)
+    print(growth, max, min)
 
 
 
