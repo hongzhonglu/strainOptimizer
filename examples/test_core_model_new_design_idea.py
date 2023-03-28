@@ -11,6 +11,10 @@ from etfl.io.json import load_json_model, save_json_model
 from pytfa.optim.utils import symbol_sum
 from cobra.util.solver import set_objective
 import pandas as pd
+import numpy as np
+import random
+
+solver = 'optlang-gurobi'
 
 # function
 def prep_sol(substrate_uptake, model,GLC_RXN_ID ='EX_glc__D_e'):
@@ -50,21 +54,6 @@ def constrain_enzymes_based_abs_abundance(model, select_enzyme=['EZ_TPI'], ub0=1
         model.constraints["MODC_enzyme_fix_" + en].lb = ub0  # new
     return model
 
-
-
-
-solver = 'optlang-gurobi'
-
-
-# test related to strain design method development
-ecoli = load_json_model("examples/models/ecoli/ecoli_core_curated.json", solver=solver)
-
-
-
-# definition of the initial state:
-# firstly set growth as the objective function
-
-# turn off by-product
 def solveModel(model):
     import math
     model.reactions.get_by_id('EX_for_e').bounds = 0, 0
@@ -92,6 +81,8 @@ def solveModel(model):
     return growth, qpmax, qpmin
 
 
+# load the model
+ecoli = load_json_model("examples/models/ecoli/ecoli_core_curated.json", solver=solver)
 
 
 # minimization the enzyme usage to get the protein abundance:
@@ -116,7 +107,7 @@ list1 = df2.to_list()
 list_ref = [1] * len(list1)
 index_ref = list(range(0,len(list1)))
 
-import numpy as np
+
 np.random.choice(index_ref, 3, replace=False)
 total_sample = 1000
 result = []
@@ -173,47 +164,7 @@ with open('examples/result/first_generation_select.txt', 'w') as f:
         f.write(f"{line}\n")
 
 
-# double test
-for ii, xx in enumerate(first_generation_select):
-    print(ii, xx)
-    ss = xx
-    delete_gene = [x for x,y in zip(enzyme,xx) if y==0]
-    delete_gene = ['EZ_'+ x for x in delete_gene]
-    # update the model
-    new_model = constrain_enzymes_based_abs_abundance(model=ecoli.copy(), select_enzyme=delete_gene, ub0=0)
-    # solve the new model
-    growth, max, min = solveModel(model=new_model)
-    print(growth, max, min)
-
-
-
-
-
-
-
-
 # cross over and mutation
-# reinput datasets
-def stringToList(string):
-  listRes = list(string.split(","))
-  return listRes
-
-first_generation_select = []
-with open('examples/result/first_generation_select.txt') as f:
-    lines = f.readlines()
-for line in lines:
-    print(line)
-    line0=stringToList(line)
-    line0=[x.replace(' ', '').replace(']\n','').replace('[','') for x in line0]
-    line0=[int(x) for x in line0]
-    first_generation_select.append(line0)
-
-
-# example datasets
-example = first_generation_select[0]
-items = first_generation_select
-
-import random
 def crossover(parent1, parent2):
     crossover_point = random.randint(0, len(example) - 1)
     child1 = parent1[0:crossover_point] + parent2[crossover_point:]
@@ -232,25 +183,42 @@ def mutate(chromosome):
     print("Performed mutation on a chromosome")
     return chromosome
 
+def stringToList(string):
+    listRes = list(string.split(","))
+    return listRes
 
-# parameters for genetic algorithm
-mutation_probability = 0.2
+# reinput datasets
+first_generation_select = []
+with open('examples/result/first_generation_select.txt') as f:
+    lines = f.readlines()
+for line in lines:
+    print(line)
+    line0=stringToList(line)
+    line0=[x.replace(' ', '').replace(']\n','').replace('[','') for x in line0]
+    line0=[int(x) for x in line0]
+    first_generation_select.append(line0)
+
+
+# example datasets
+example = first_generation_select[0]
+items = first_generation_select
+
 
 # define parent
 parent1 = items[0]
 parent2 = items[1]
 child1, child2 = crossover(parent1, parent2)
 
+
 # perform mutation on the two new chromosomes
+mutation_probability = 0.2
 if random.uniform(0, 1) < mutation_probability:
     child1 = mutate(child1)
 if random.uniform(0, 1) < mutation_probability:
     child2 = mutate(child2)
-
 child1_test = [x for x in child1 if x == 0]
 child2_test = [x for x in child2 if x == 0]
-
-new_datasets = [child1, child2] + first_generation_select
+new_datasets = [child1, child2]# + first_generation_select
 
 
 # calculate  fitness again
@@ -264,5 +232,3 @@ for ii, xx in enumerate(new_datasets):
     # solve the new model
     growth, max, min = solveModel(model=new_model)
     print(growth, max, min)
-
-
