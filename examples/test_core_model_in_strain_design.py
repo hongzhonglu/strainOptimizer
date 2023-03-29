@@ -77,7 +77,7 @@ ecoli.objective = 'EX_succ_e'
 ecoli.objective.direction = 'max'
 sol2 = ecoli.optimize()
 #ecoli.reactions.get_by_id('EX_succ_e').bounds = sol2.objective_value, sol2.objective_value
-ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 0
+ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 0.05
 
 
 
@@ -119,7 +119,7 @@ all_enzyme_ID = out_new.keys()
 # give a disturbation
 ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = 0, 3# first relax the above constraints
 ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 1000
-ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme = 'EZ_PGI', ub0=0.001657756*3)
+ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme = 'EZ_PGI', ub0=0.00087*3)
 
 
 # calculate the max glucose uptake after disturbation
