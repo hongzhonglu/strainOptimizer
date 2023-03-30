@@ -245,6 +245,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     results['geneTable']=genetable
     print('  - Rank targets by priority levels according to EUVA results: ' + str(len(leval1_list)) + ' targets in level 1, ' + str(len(leval2_list)) + ' targets in level 2, ' + str(len(leval3_list)) + ' targets in level 3')
 
+    return results
     # # 6.- combine candidate targets
     step=step+1
     print(str(step) + '.    **** Combine candidate targets ****')
