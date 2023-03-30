@@ -39,7 +39,7 @@ def compare_EUVR(gene_enz_fva_result):
     return df_gene_euvr_result
 
 
-def pprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-10):
+def pprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-10,model_type='etfl'):
     '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
     para:
         model: must be ETFL model
@@ -51,13 +51,17 @@ def pprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-10
     return:
         a pandas series of protein concentration
         '''
-    all_enz_concentration = pprotFBA.ppFBA_prot_conc(model=model, target=target,c_source=c_source,c_uptake=c_uptake,tol=tol)
+    if model_type=='etfl':
+        all_enz_concentration = pprotFBA.ppFBA_prot_conc(model=model, target=target,c_source=c_source,c_uptake=c_uptake,tol=tol)
+    elif model_type=='ecGEM':
+        all_enz_concentration = pprotFBA.ecGEM_ppFBA_prot_conc(model=model, target=target,c_source=c_source,c_uptake=c_uptake,tol=tol)
+
     enzs_concentration=all_enz_concentration[enzymeIDlist]
 
     return enzs_concentration
 
 
-def genelist_to_enzymelist(model,genelist):
+def genelist_to_enzymelist(model,genelist,model_type='etfl'):
     '''
     get the enzyme list from a gene list
     para:
@@ -66,22 +70,44 @@ def genelist_to_enzymelist(model,genelist):
     return:
         a list of enzyme ID
     '''
-    # get all enzyme to gene dict
-    all_enzIDlist=[enz.id for enz in model.enzymes]
-    enz_geneDict={}
-    for enzID in all_enzIDlist:
-        enz_i_genelist=list(model.enzymes.get_by_id(enzID).composition.keys())
-        enz_i_gene_list_to_str='|'.join(enz_i_genelist)
-        enz_geneDict[enzID]=enz_i_gene_list_to_str
-    df_enz_gene=pd.Series(enz_geneDict)
-    # find target enzymes list
-    enzlist=[]
-    gene_enz_dict={}
-    for gene in genelist:
-        enzymes=df_enz_gene[df_enz_gene.str.contains(gene)].index.tolist()
-        gene_enz_dict[gene]=enzymes
-        enzlist=enzlist+enzymes
-    enzlist=list(set(enzlist))
+    if model_type=='etfl':
+        # get all enzyme to gene dict
+        all_enzIDlist=[enz.id for enz in model.enzymes]
+        enz_geneDict={}
+        for enzID in all_enzIDlist:
+            enz_i_genelist=list(model.enzymes.get_by_id(enzID).composition.keys())
+            enz_i_gene_list_to_str='|'.join(enz_i_genelist)
+            enz_geneDict[enzID]=enz_i_gene_list_to_str
+        df_enz_gene=pd.Series(enz_geneDict)
+        # find target enzymes list
+        enzlist=[]
+        gene_enz_dict={}
+        for gene in genelist:
+            enzymes=df_enz_gene[df_enz_gene.str.contains(gene)].index.tolist()
+            gene_enz_dict[gene]=enzymes
+            enzlist=enzlist+enzymes
+        enzlist=list(set(enzlist))
+
+    elif model_type=='ecGEM':
+        # gene_to_prot_dict
+        gene_to_prot_dict = {}
+        for g in model.genes:
+            geneID = g.id
+            for rxn in g.reactions:
+                if 'draw_prot_' in rxn.id:
+                    draw_prot_rxnID = rxn.id
+                    gene_to_prot_dict[geneID] = draw_prot_rxnID
+        all_enz_genes= list(gene_to_prot_dict.keys())
+        # find target enzymes list
+        enzlist=[]
+        gene_enz_dict={}
+        for geneID in genelist:
+            if geneID not in all_enz_genes:
+                gene_enz_dict[geneID]='no enzyme'
+            else:
+                enzID=gene_to_prot_dict[geneID]
+                enzlist.append(enzID)
+                gene_enz_dict[geneID]=[enzID]
 
     return enzlist,gene_enz_dict
 
@@ -167,7 +193,7 @@ def remove_essential_targets(candidates,essential_path=r'code_etfl/ETFLdesigner/
     return candidates
 
 
-def getMetGeneMatrix(model,geneIDlist=None):
+def getMetGeneMatrix(model,geneIDlist=None,model_type='etfl'):
     """
     Function that obtains a binary matrix in which rows represent metabolites and columns genes.
     Each non-zero coeffiecient represents a relationship between a gene and a metabolite
@@ -175,6 +201,7 @@ def getMetGeneMatrix(model,geneIDlist=None):
     Args:
     - model: (ETFL/ecGEM model) Model to obtain the matrix from
     - genes: (list) List of gene IDs or gene indexes to take from the model (Default: all genes in the model)
+    - model_type: (str) Type of model:'etfl'/'ecGEM' (Default: 'etfl')
 
     Returns:
     - GeneMetMatrix: (numpy array) Boolean matrix representing the relationships metabolites and genes
@@ -188,6 +215,10 @@ def getMetGeneMatrix(model,geneIDlist=None):
 
     # build metGeneMatrix
     allmets_ID=[m.id for m in model.metabolites]
+    if model_type=='ecGEM':
+        # remove all prot metabolites
+        allmets_ID=[m for m in allmets_ID if not m.startswith('prot_')]
+
     metGeneMatrix=pd.DataFrame(index=allmets_ID,columns=geneIDlist)
     for gID in geneIDlist:
         g=model.genes.get_by_id(gID)
@@ -195,7 +226,8 @@ def getMetGeneMatrix(model,geneIDlist=None):
         for rxn in rxnList:
             metList=list(rxn.metabolites.keys())
             for met in metList:
-                metGeneMatrix.loc[met.id,gID]=1
+                if met.id in allmets_ID:
+                    metGeneMatrix.loc[met.id,gID]=1
     metGeneMatrix=metGeneMatrix.fillna(0)
     metGeneMatrix=metGeneMatrix.astype(int)
     # remove rows with all zeros

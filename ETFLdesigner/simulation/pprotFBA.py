@@ -70,7 +70,7 @@ def ppFBA(model, target,c_source,c_uptake=1, tol=1e-6,model_type='etfl'):
     return sol2.fluxes
 
 
-def ppFBA_prot_conc(model, target,c_source,c_uptake=1, tol=1e-10):
+def etfl_ppFBA_prot_conc(model, target,c_source,c_uptake=1, tol=1e-10):
     '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
     para:
         model: must be ETFL model
@@ -111,3 +111,23 @@ def ppFBA_prot_conc(model, target,c_source,c_uptake=1, tol=1e-10):
     else:
         # print the error message
         raise Exception('The model cannot be solved to optimality')
+
+
+def ecGEM_ppFBA_prot_conc(model, target,c_source,c_uptake=1, tol=1e-10):
+    '''use minprotFBA to predict target proteins concentration(1/3600 mmol/gDW)
+    para:
+        model: must be ecGEM model
+        target: the target reaction ID
+        enzID_list: a list of enzyme ID
+        c_source: the carbon source ID
+        c_uptake: the carbon source uptake rate(default=1 mmol/gDW/h)
+        tol: the tolerance of the model
+        return:
+        a pandas series of protein concentration'''
+
+    fluxes=ppFBA(model, target,c_source,c_uptake=c_uptake, tol=tol,model_type='ecGEM')
+    all_prot_rxnIDlist=[rxn.id for rxn in model.reactions if rxn.id.startswith('draw_prot_')]
+    all_prot_conc=fluxes[all_prot_rxnIDlist]
+
+    return all_prot_conc
+

@@ -7,6 +7,7 @@ from etfl.io.json import load_json_model
 from tqdm import tqdm
 from pytfa.analysis.variability import _variability_analysis_element
 from etfl.optim.utils import safe_optim
+from cobra.flux_analysis import flux_variability_analysis
 
 
 def etfl_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0.99,obj_direction='max'):
@@ -79,7 +80,7 @@ def etfl_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0
 def ecGEM_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0.99,obj_direction='max'):
     '''do enzyme variety analysis for ecGEM
        para:
-           model: ETFL model
+           model: ecGEM model
            enzymeIDlist: a list of enzyme ID
            fraction_of_optimum: Requires that the objective value is at least the
                fraction times maximum objective value.Must be <= 1.0. (default 0.95)
@@ -87,43 +88,15 @@ def ecGEM_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=
            a dataframe of FVA result
            '''
     # fix substrate uptake
-    model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
+    model.reactions.get_by_id(c_source).bounds = c_uptake, c_uptake
 
-    # 1.Optimize a given objective
+    # set the objective function
     model.objective = targetID
     model.objective_direction = obj_direction
-    sol = safe_optim(model)
-    obj_value = sol.objective_value
 
-    # fix old objective value
-    if model.solver.objective.direction == "max":
-        fva_old_objective = model.problem.Variable(
-            "fva_old_objective",
-            lb=fraction_of_optimum * model.solver.objective.value,
-        )
-    else:
-        fva_old_objective = model.problem.Variable(
-            "fva_old_objective",
-            ub=fraction_of_optimum * model.solver.objective.value,
-        )
-    fva_old_obj_constraint = model.problem.Constraint(
-        model.solver.objective.expression - fva_old_objective,
-        lb=0,
-        ub=0,
-        name="fva_old_objective_constraint",
-    )
-    model.add_cons_vars([fva_old_objective, fva_old_obj_constraint])
+    df_fva_result=flux_variability_analysis(model=model,reaction_list=enzymeIDlist,fraction_of_optimum=fraction_of_optimum)
 
-    # do FVA(unfinshed)
-    results = {'min': {}, 'max': {}}
-
-    # remove fixed constraint and old objective
-    model.remove_cons_vars([fva_old_objective, fva_old_obj_constraint])
-    # restore old objective
-    model.objective = targetID
-    df = pd.DataFrame(results)
-    df.rename(columns={'min': 'minimum', 'max': 'maximum'}, inplace=True)
-    return df
+    return df_fva_result
 
 
 def enzymeVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0.99,obj_direction='max',model_type='etfl'):

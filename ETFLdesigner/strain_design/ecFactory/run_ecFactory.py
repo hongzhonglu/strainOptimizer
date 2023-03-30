@@ -10,7 +10,7 @@ from ETFLdesigner.ETFLdesigner.analysis.enzyme_variety_analysis import enzymeVA
 from etfl.optim.utils import safe_optim
 from find_min_sets import find_min_set
 
-def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
+def run_ecFactory_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
     '''
     This function runs ecFSEOF method to identify gene targets for strain design
     :param model: ETFL model
@@ -25,7 +25,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
         2. KD threshold
         3. OE threshold
     :param remove_essential: a boolean value indicating whether to remove essential genes from the list of targets
-    :param model_type: a string indicating the type of model ('etfl' or 'ecYeast')
+    :param model_type: a string indicating the type of model ('etfl' or 'ecGEM')
     :return: a pandas dataframe with the following columns:
         1. geneID: gene ID
         2. k_score: k-score of the gene
@@ -33,8 +33,6 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     '''
     # method parameters
     tol = 1e-9  # numeric tolerance for determining non-zero enzyme usages
-    OEF = 2  # overexpression factor for enzyme targets
-    KDF = 0.5  # down-regulation factor for enzyme targets
     step = 0
 
     # Parameters for FSEOF method
@@ -74,7 +72,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     step += 1
     print(str(step) + '.-  **** Construct Genes-metabolites network for classification of targets ****')
     # Get Genes-metabolites network
-    metGeneMatrix, metsConectivity, genesConectivity=getMetGeneMatrix(model=model,geneIDlist=results['geneTable'].index.tolist())
+    metGeneMatrix, metsConectivity, genesConectivity=getMetGeneMatrix(model=model,geneIDlist=results['geneTable'].index.tolist(),model_type=model_type)
     # Get independent genes from GeneMetMatrix
     independant_genes,gene_equal_Matrix=getGeneDepMatrix(metGeneMatrix)
     # Get gene target groups (those connected to exactly the same metabolites)
@@ -84,6 +82,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     # print('\n')
     results['independent_genes'] = independant_genes
     results['groups'] = groups
+    results['metGeneMatrix'] = metGeneMatrix
 
 
     # 5.- enzyme usage variety analysis(EUVA)
@@ -92,14 +91,21 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
 
     # get target enzyme list
     gene_targetList=results['geneTable'].index.tolist()
-    target_enz_list,gene_enz_dict=genelist_to_enzymelist(model=model,genelist=gene_targetList)
+    target_enz_list,gene_enz_dict=genelist_to_enzymelist(model=model,genelist=gene_targetList,model_type=model_type)
     df_gene_to_enz=pd.Series(gene_enz_dict)
     results['gene_enz_dict']=df_gene_to_enz
     # Fix unit C source uptake
     c_uptake = modelParam['c_uptake']
     c_source= modelParam['c_source']
+    if model_type=='etfl':
+        growth_rxnID = model.growth_reaction.id
+    elif model_type=='ecGEM':
+        growth_rxnID = 'r_2111'
     gluc_MW=0.180156  # g/mmol
-    model.reactions.get_by_id(c_source).bounds=-c_uptake, -c_uptake
+    if model_type=='etfl':
+        model.reactions.get_by_id(c_source).bounds=-c_uptake, -c_uptake
+    elif model_type=='ecGEM':
+        model.reactions.get_by_id(c_source).bounds=c_uptake, c_uptake
     print(f'  - Fixed unit glucose uptake rate at {c_uptake} mmol/gDW.h')
 
     # 5.1 - Run EUVA for optimal production conditions
@@ -107,7 +113,8 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     print('  - Fixed suboptimal biomass production, according to provided experimental yield')
     # Fix suboptimal experimental biomass yield conditions
     fix_gr = expYield * gluc_MW* c_uptake
-    model.growth_reaction.bounds = fix_gr, fix_gr
+    model.reactions.get_by_id(growth_rxnID).bounds = fix_gr-tol, fix_gr+tol
+
     print(' Fix suboptimal experimental biomass = ' + str(fix_gr) + ' h-1')
     print('  - Maximize the production rate of the target product')
     # set maximize production rate as objective
@@ -117,8 +124,13 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     sol=safe_optim(model)
     max_prod=sol.objective_value
     # run parsimonious protein usages FBA for max production
-    prod_minprotFBA_protconc = pprotFBA_prot_conc(model=model, target=targetID, enzymeIDlist=target_enz_list,
-                                                    c_source=c_source, c_uptake=c_uptake, tol=tol)
+    prod_minprotFBA_protconc = pprotFBA_prot_conc(model=model,
+                                                  target=targetID,
+                                                  enzymeIDlist=target_enz_list,
+                                                    c_source=c_source,
+                                                  c_uptake=c_uptake,
+                                                  tol=tol,
+                                                  model_type=model_type)
     # fix max production rate
     model.reactions.get_by_id(targetID).bounds = max_prod-tol, max_prod+tol
     # run enzyme usage variety analysis
@@ -133,7 +145,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     prod_enz_fva_result['minprotFBA']=prod_minprotFBA_protconc
     results['prod_enz_fva_result']=prod_enz_fva_result      # can be deleted
     # release biomass and production constraints
-    model.growth_reaction.bounds = 0, 1000
+    model.reactions.get_by_id(growth_rxnID).bounds = 0, 1000
     model.reactions.get_by_id(targetID).bounds = 0, 1000
 
     # 5.2 - Run EUVA for optimal growth condition.
@@ -142,22 +154,25 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     model.reactions.get_by_id(targetID).bounds = max_prod*0.01, max_prod*0.01
     print('  - Maximize biomass production')
     # set maximize biomass production as objective
-    model.growth_reaction.bounds = 0, 1000
-    model.objective = model.growth_reaction
+    model.reactions.get_by_id(growth_rxnID).bounds = 0, 1000
+    model.objective = growth_rxnID
     model.objective_direction = 'max'
     sol=safe_optim(model)
     max_gr=sol.objective_value
 
     print(' Max biomass = ' + str(max_gr) + ' h-1')
     # run parsimonious protein usages FBA for max growth
+
     wt_minprotFBA_protconc=pprotFBA_prot_conc(model=model,
-                                              target=model.growth_reaction.id,
+                                              target=growth_rxnID,
                                               enzymeIDlist=target_enz_list,
                                               c_source=c_source,
-                                              c_uptake=c_uptake)
+                                              c_uptake=c_uptake,
+                                              tol=tol,
+                                              model_type=model_type)
     # run enzyme usage variety analysis
     wt_enz_fva_result=enzymeVA(model=model,
-                               targetID=model.growth_reaction.id,
+                               targetID=growth_rxnID,
                                enzymeIDlist=target_enz_list,
                                c_source=c_source,
                                c_uptake=c_uptake,
@@ -168,7 +183,7 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     wt_enz_fva_result['minprotFBA']=wt_minprotFBA_protconc
     results['wt_enz_fva_result']=wt_enz_fva_result     # can be deleted
     # release biomass and production constraints
-    model.growth_reaction.bounds = 0, 1000
+    model.reactions.get_by_id(growth_rxnID).bounds = 0, 1000
     model.reactions.get_by_id(targetID).bounds = 0, 1000
 
     # 5.3 - Discard some targets according to the EUVA results
@@ -245,7 +260,10 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     results['geneTable']=genetable
     print('  - Rank targets by priority levels according to EUVA results: ' + str(len(leval1_list)) + ' targets in level 1, ' + str(len(leval2_list)) + ' targets in level 2, ' + str(len(leval3_list)) + ' targets in level 3')
 
-    return results
+
+    if model_type=='ecGEM':
+        return results
+
     # # 6.- combine candidate targets
     step=step+1
     print(str(step) + '.    **** Combine candidate targets ****')
