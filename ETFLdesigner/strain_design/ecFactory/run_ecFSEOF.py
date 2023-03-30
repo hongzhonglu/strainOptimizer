@@ -2,13 +2,20 @@
 # date : 2023/2/26 
 # author : wangh
 import sys
+<<<<<<< Updated upstream:ETFLdesigner/strain_design/ecFactory/run_ecFSEOF.py
 sys.path.append(r"D:\code\github\etfl\code_etfl\ETFLdesigner\ecFactory")
 
 import pandas as pd
 import fseof
 from ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,enzymeFVA,genelist_to_enzymelist,minprotFBA_prot_conc,compare_EUVR
+=======
+import pandas as pd
+from ETFLdesigner.ETFLdesigner.strain_design.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR,pprotFBA_prot_conc
+from ETFLdesigner.ETFLdesigner.analysis.enzyme_variety_analysis import enzymeVA
+from ETFLdesigner.ETFLdesigner.strain_design.ecFactory import fseof
+>>>>>>> Stashed changes:ETFLdesigner/strain_design/ecFactory/run_ecFactory.py
 from etfl.optim.utils import safe_optim
-from find_min_sets import find_min_set
+from ETFLdesigner.ETFLdesigner.strain_design.ecFactory.find_min_sets import find_min_set
 
 def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
     '''
@@ -225,7 +232,13 @@ def run_ecFSEOF_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1
     results['geneTable']=genetable
     print('  - Rank targets by priority levels according to EUVA results: ' + str(len(leval1_list)) + ' targets in level 1, ' + str(len(leval2_list)) + ' targets in level 2, ' + str(len(leval3_list)) + ' targets in level 3')
 
+<<<<<<< Updated upstream:ETFLdesigner/strain_design/ecFactory/run_ecFSEOF.py
     # 6.- combine candidate targets
+=======
+    if model_type=='ecGEM':
+        return results
+    # # 6.- combine candidate targets
+>>>>>>> Stashed changes:ETFLdesigner/strain_design/ecFactory/run_ecFactory.py
     step=step+1
     print(str(step) + '.    **** Combine candidate targets ****')
     # fix substrate uptake rate
