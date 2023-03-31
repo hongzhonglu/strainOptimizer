@@ -11,3 +11,10 @@ def load_ecmodel(filename):
             '''
     model = read_sbml_model(filename)
     return model
+
+
+def ecGEM_fix_gluc(model,uptake,ex_glucID='r_1714_REV'):
+    model.reactions.get_by_id(ex_glucID).bounds=uptake,uptake
+    return model
+
+

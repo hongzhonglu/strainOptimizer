@@ -8,7 +8,7 @@ import fseof
 from ETFLdesigner.ETFLdesigner.strain_design.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR,pprotFBA_prot_conc
 from ETFLdesigner.ETFLdesigner.analysis.enzyme_variety_analysis import enzymeVA
 from etfl.optim.utils import safe_optim
-from find_min_sets import find_min_set
+from ETFLdesigner.ETFLdesigner.strain_design.ecFactory import find_min_sets
 
 def run_ecFactory_design(model, modelParam, expYield,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
     '''
@@ -251,18 +251,20 @@ def run_ecFactory_design(model, modelParam, expYield,action_thresholds=[0.05,0.5
     leval1_list=gene_euvr_compare[gene_euvr_compare.str.contains('distinct')].index.tolist()
     leval2_list=gene_euvr_compare[gene_euvr_compare.str.contains('overlaped')].index.tolist()
     leval3_list=gene_euvr_compare[gene_euvr_compare=='undistinguishable'].index.tolist()
+    no_enzyme_list=results['gene_enz_dict'][results['gene_enz_dict']=='no enzyme'].index.tolist()
+    leval3_list=list(set(leval3_list).difference(set(no_enzyme_list)))
     genetable=results['geneTable']
     # genetable['target_priority_leval']=0
     genetable.loc[leval1_list,'target_priority_leval']=1
     genetable.loc[leval2_list,'target_priority_leval']=2
     genetable.loc[leval3_list,'target_priority_leval']=3
+    genetable.loc[no_enzyme_list,'target_priority_leval']='no enzyme'
+    # mark the no enzyme gene target
+
     genetable['target_priority_leval'].fillna('removed by EUVA',inplace=True)
     results['geneTable']=genetable
     print('  - Rank targets by priority levels according to EUVA results: ' + str(len(leval1_list)) + ' targets in level 1, ' + str(len(leval2_list)) + ' targets in level 2, ' + str(len(leval3_list)) + ' targets in level 3')
 
-
-    if model_type=='ecGEM':
-        return results
 
     # # 6.- combine candidate targets
     step=step+1
@@ -271,17 +273,23 @@ def run_ecFactory_design(model, modelParam, expYield,action_thresholds=[0.05,0.5
     c_source=modelParam['c_source']
     c_uptake=modelParam['c_uptake']
     targetID=modelParam['targetID']
-    candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin([1.0,2.0])].index.tolist()
+    if model_type=='etfl':
+        candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin([1.0,2.0])].index.tolist()
+    elif model_type=='ecGEM':
+        candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin([1,2,3])].index.tolist()
     print("Finding the minimal set of %s candidates to achieve the max target production yield" %len(candidatesID_list))
     # find minmal sets of targets
-    min_set_analysis_result,optimal_prod_result=find_min_set(model=model,c_source=c_source,c_uptake=c_uptake,expYield=expYield,
+    min_set_analysis_result,optimal_prod_result=find_min_sets.find_min_set(model=model,c_source=c_source,c_uptake=c_uptake,expYield=expYield,
                                             targetID=targetID,geneIDlist=candidatesID_list,gene_enz_fva_result=results['gene_enz_fva_result'],
-                                            gene_enz_dict=results['gene_enz_dict'])
+                                            gene_enz_dict=results['gene_enz_dict'],model_type=model_type)
     # 判断 min_set_analysis_result 是否为空
     if not min_set_analysis_result.empty:
         print('  - Minimal set of targets: %s'%len(min_set_analysis_result[min_set_analysis_result['score']<1.0]))
         results['min_set_analysis_result']=min_set_analysis_result
         results['optimal_prod_result']=optimal_prod_result
+        min_set_IDlist=min_set_analysis_result[min_set_analysis_result['score']<1.0].index.tolist()
+        results['geneTable'].loc[min_set_IDlist,'minimal candidates set']=1
+        results['geneTable']['minimal candidates set'].fillna(0,inplace=True)
 
 
     return results
