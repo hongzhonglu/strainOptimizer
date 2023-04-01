@@ -4,122 +4,7 @@
 import os
 import numpy as np
 import pandas as pd
-from pytfa.optim.utils import symbol_sum
-from cobra.util.solver import set_objective
-from etfl.optim.utils import safe_optim
-
-
-def minprotFBA(model, target,c_source,c_uptake=1, tol=1e-6,model_type='etfl'):
-    """
-   optimize for a given objective. Firstly,maximize the objective reaction,and then  a protein pool minimization is performed subject to the optimal
-    production level.
-
-    Args:
-    - model: (cobra.Model) the model to optimize
-    - target: (str) reaction ID for the objective reaction
-    - c_source: (str) reaction ID for the main carbon source uptake reaction
-    - c_uptake: (float) uptake rate for the main carbon source (default: 1)
-    - tol: (float) numerical tolerance for fixing bounds(default: 1e-6)
-    - prot_conc_output: (bool) whether to output protein concentration (default: False)
-    - model_type: (str) type of model to optimize:'etfl'/'ecGEM' (default: 'etfl')
-
-    Returns:
-    - sol.x: (pandas.DataFrame) the optimized flux distribution
-
-    """
-    if model_type=='etfl':
-        model.reactions.get_by_id(c_source).bounds = -c_uptake - tol, -c_uptake + tol
-    elif model_type=='ecGEM':
-        model.reactions.get_by_id(c_source).bounds = c_uptake - tol, c_uptake + tol
-    # 1.Optimize for a given objective
-    model.objective = target
-    model.objective_direction = 'max'
-    sol = safe_optim(model)
-    max_obj = sol.objective_value
-
-    # 2.Fix optimal value for objective and minimize total protein usage
-    if sol.status == 'optimal':
-        model.reactions.get_by_id(target).bounds = max_obj * (1 - tol), max_obj * (1 + tol)
-        # for etfl model: minimize enzyme usage by maxing dummy enzyme
-        if model_type=='etfl':
-            obj_expr = symbol_sum([model.enzymes.dummy_enzyme.variable])
-            set_objective(model, obj_expr)
-            model.objective_direction = 'max'
-            sol2 = safe_optim(model)
-        elif model_type=='ecGEM':
-            prot_pool_rxnID='prot_pool_exchange'
-            model.objective = prot_pool_rxnID
-            model.objective_direction = 'min'
-            sol2=model.optimize()
-    else:
-        sol2 = np.zeros(len(model.reactions))
-
-    # restore the original bounds and objective
-    if model_type=='etfl':
-        model.reactions.get_by_id(target).bounds = 0, 1000
-        model.objective= model.growth_reaction.id
-        model.objective_direction = 'max'
-    elif model_type=='ecGEM':
-        model.reactions.get_by_id(target).bounds = 0, 1000
-        model.objective = 'r_2111'
-        model.objective_direction = 'max'
-
-    return sol2.fluxes
-
-
-
-def simulateGrowth(model, target, c_source,c_uptake=1, alpha=1, tol=1e-6,model_type='etfl'):
-    """
-    Function that performs a series of LP optimizations on an ETFL/ecModel,
-    by first maximizing biomass, then fixing a suboptimal value and
-    proceeding to maximize a given production target reaction, last
-    a protein pool minimization is performed subject to the optimal
-    production level.
-
-    Args:
-    - model: (cobra.Model) the model to optimize
-    - target: (str) reaction ID for the objective reaction
-    - c_source: (str) reaction ID for the main carbon source uptake reaction
-    - c_uptake: (float) uptake rate for the main carbon source (default: 1)
-    - alpha: (float) scaling factor for desired suboptimal growth (default: 1)
-    - tol: (float) numerical tolerance for fixing bounds (default: 1e-6)
-    - model_type: (str) type of model to optimize.'etfl'/'ecGEM' (default: 'etfl')
-
-    Returns:
-    - flux: (pandas.Series) a Series of the optimized flux distribution
-
-    """
-    # Fix a unit main carbon source uptake
-    # model=model.copy()
-    uptake_rxn = model.reactions.get_by_id(c_source)
-    # c_source_MW = uptake_rxn.reactants[0].formula_weight/1000
-    if model_type=='etfl':
-        uptake_rxn.bounds = -c_uptake- tol, -c_uptake + tol
-        # Maximize growth
-        gr_rxn=model.growth_reaction
-        grID=gr_rxn.id
-        model.objective = grID
-        sol = safe_optim(model)
-        max_gr=sol.fluxes[grID]
-
-    elif model_type=='ecGEM':
-        uptake_rxn.bounds = c_uptake - tol, c_uptake + tol
-        # Maximize growth
-        gr_rxn = model.reactions.get_by_id('r_2111')
-        grID = gr_rxn.id
-        model.objective = grID
-        sol=model.optimize()
-        max_gr = sol.fluxes[grID]
-
-    # Fix growth suboptimal and then maximize product
-    model.reactions.get_by_id(grID).lower_bound = max_gr * (1 - tol) * alpha
-    flux = minprotFBA(model, target,c_source=c_source,c_uptake=c_uptake, tol=tol,model_type=model_type)
-
-
-    # restore the original bounds
-    model.reactions.get_by_id(grID).lower_bound = 0
-
-    return flux
+from ETFLdesigner.ETFLdesigner.simulation import pprotFBA,optimal_production
 
 
 def k_matrix_filter(model, k_matrix, alpha, tol):
@@ -192,7 +77,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, tol=1e-10, filterG=
         gr_rxnID = model.growth_reaction.id
     elif model_type == 'ecGEM':
         gr_rxnID = 'r_2111'
-    FC['flux_WT'] = minprotFBA(model=model, target=gr_rxnID,c_source=c_source,c_uptake=c_uptake, tol=tol,model_type=model_type)
+    FC['flux_WT'] = pprotFBA.ppFBA(model=model, target=gr_rxnID,c_source=c_source,c_uptake=c_uptake, tol=tol,model_type=model_type)
     # Simulate forced (X% growth and the rest towards product) based on yield:
     FC['alpha'] = alpha
     # initialize fluxes and K_scores matrices
@@ -200,7 +85,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, tol=1e-10, filterG=
     v_matrix = pd.DataFrame(index=rxnIDlist, columns=alpha)
     k_matrix = pd.DataFrame(index=rxnIDlist, columns=alpha)
     for i in range(len(alpha)):
-        FC['flux_MAX'] = simulateGrowth(model=model, target=targetID, c_source=c_source,c_uptake= c_uptake,alpha=alpha[i], tol=tol, model_type=model_type)
+        FC['flux_MAX'] = optimal_production.optim_production_simulating(model=model, target=targetID, c_source=c_source,c_uptake= c_uptake,alpha=alpha[i], tol=tol, model_type=model_type)
         v_matrix.iloc[:, i] = FC['flux_MAX']
         k_matrix.iloc[:, i] = FC['flux_MAX'] / FC['flux_WT']
 

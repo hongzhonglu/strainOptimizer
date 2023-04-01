@@ -2,33 +2,47 @@
 # date : 2023/3/18 
 # author : wangh
 
-
-
-def cal_max_yield(model,targetID,c_source,c_uptake,tol=1e-10):
+def cal_max_yield(model,targetID,c_source,c_uptake,tol=1e-10,model_type='etfl'):
     '''calculate the maximum yield of the target product
-
-    Parameters:
-        model (etfl.core.model.ETFLModel): The ETFL model
-        targetID (str): The ID of the objective reaction
-        c_source (str): The ID of the carbon source uptake reaction
-        c_uptake (float): The carbon source uptake rate
-        tol (float, optional): The tolerance for the optimization. Defaults to 1e-10.
-
-    Returns:
-        max_yield (float): The maximum yield of the target product
-        max_prod (float): The maximum production of the target product
+    parameters:
+        model: ETFL model
+        targetID: str, the objective reaction ID
+        c_source: str, the carbon source uptake reaction ID
+        c_uptake: float, the carbon source uptake rate
+    return:
+        max_yield: float, the maximum yield of the target product
     '''
     # 1. fix carbon source uptake
-    model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
+    if model_type=='etfl':
+        model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
+    elif model_type=='ecGEM':
+        model.reactions.get_by_id(c_source).bounds=c_uptake,c_uptake
     # 2. calculate optimal production yield
-    model.objective=model.reactions.get_by_id(targetID)
+    model.objective=targetID
     model.objective_direction='max'
     max_prod=model.slim_optimize()
+    if model.solver.status != 'optimal':
+        return 0,0
     # 3. fix the max target product production and minimize the C source uptake
-    model.reactions.get_by_id(targetID).bounds=max_prod-tol,max_prod+tol
-    model.objective=c_source
-    model.objective_direction='min'
-    opt_c_uptake=-model.slim_optimize()
+    model.reactions.get_by_id(targetID).bounds=max_prod*(1-0.0001),max_prod
+    if model_type=='etfl':
+        model.reactions.get_by_id(c_source).bounds=-c_uptake,0
+        model.objective = c_source
+        model.objective_direction = 'max'
+        opt_c_uptake=-model.slim_optimize()
+    elif model_type=='ecGEM':
+        model.reactions.get_by_id(c_source).bounds=0,1000
+        model.objective=c_source
+        model.objective_direction='min'
+        opt_c_uptake=model.slim_optimize()
+        if opt_c_uptake>c_uptake:
+            print(f'optimal C source uptake {opt_c_uptake} is larger than the given C source uptake')
+            print(model.objective.expression)
+    # 4. calculate the maximum yield
     max_yield=max_prod/opt_c_uptake
+    # max_yield=abs(max_yield)
+
+    # restore the fixed bounds
+    model.reactions.get_by_id(targetID).bounds = 0,1000
 
     return max_yield, max_prod
