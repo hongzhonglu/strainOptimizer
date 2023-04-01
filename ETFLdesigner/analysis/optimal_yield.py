@@ -2,7 +2,7 @@
 # date : 2023/3/18 
 # author : wangh
 
-def cal_max_yield(model,targetID,c_source,c_uptake,tol=1e-10,model_type='etfl'):
+def cal_max_yield(model,targetID,c_source,c_uptake,model_type='etfl'):
     '''calculate the maximum yield of the target product
     parameters:
         model: ETFL model
@@ -24,20 +24,18 @@ def cal_max_yield(model,targetID,c_source,c_uptake,tol=1e-10,model_type='etfl'):
     if model.solver.status != 'optimal':
         return 0,0
     # 3. fix the max target product production and minimize the C source uptake
-    model.reactions.get_by_id(targetID).bounds=max_prod*(1-0.0001),max_prod
+    model.reactions.get_by_id(targetID).bounds=max_prod,max_prod
     if model_type=='etfl':
         model.reactions.get_by_id(c_source).bounds=-c_uptake,0
         model.objective = c_source
         model.objective_direction = 'max'
         opt_c_uptake=-model.slim_optimize()
     elif model_type=='ecGEM':
-        model.reactions.get_by_id(c_source).bounds=0,1000
+        model.reactions.get_by_id(c_source).bounds=0,c_uptake
         model.objective=c_source
         model.objective_direction='min'
         opt_c_uptake=model.slim_optimize()
-        if opt_c_uptake>c_uptake:
-            print(f'optimal C source uptake {opt_c_uptake} is larger than the given C source uptake')
-            print(model.objective.expression)
+
     # 4. calculate the maximum yield
     max_yield=max_prod/opt_c_uptake
     # max_yield=abs(max_yield)

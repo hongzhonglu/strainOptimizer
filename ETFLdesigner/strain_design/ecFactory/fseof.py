@@ -4,7 +4,7 @@
 import os
 import numpy as np
 import pandas as pd
-from ETFLdesigner.ETFLdesigner.simulation import pprotFBA,optimal_production
+from ETFLdesigner.ETFLdesigner.simulation import pprotFBA
 
 
 def k_matrix_filter(model, k_matrix, alpha, tol):
@@ -32,7 +32,7 @@ def k_matrix_filter(model, k_matrix, alpha, tol):
     return k_matrix
 
 
-def flux_scanning(model, targetID, c_source,c_uptake, alpha, tol=1e-10, filterG=False,model_type='etfl'):
+def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model_type='etfl',tol=1e-6):
     """
     ecFlux_scanning
     Args:
@@ -61,9 +61,6 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, tol=1e-10, filterG=
             k_genes (pd.DataFrame): k-score for each remaining gene
     """
 
-    if tol is None:
-        tol = 1e-10
-
     if filterG is None:
         filterG = False
 
@@ -77,15 +74,24 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, tol=1e-10, filterG=
         gr_rxnID = model.growth_reaction.id
     elif model_type == 'ecGEM':
         gr_rxnID = 'r_2111'
-    FC['flux_WT'] = pprotFBA.ppFBA(model=model, target=gr_rxnID,c_source=c_source,c_uptake=c_uptake, tol=tol,model_type=model_type)
-    # Simulate forced (X% growth and the rest towards product) based on yield:
+    FC['flux_WT'] = pprotFBA.ppFBA(model=model,
+                                   target=gr_rxnID,
+                                   c_source=c_source,
+                                   c_uptake=c_uptake,
+                                   model_type=model_type)
+    max_growth = FC['flux_WT'][gr_rxnID]
+
+    # simulate production in different suboptimal growth rate conditions
     FC['alpha'] = alpha
     # initialize fluxes and K_scores matrices
     rxnIDlist= [rxn.id for rxn in model.reactions]
     v_matrix = pd.DataFrame(index=rxnIDlist, columns=alpha)
     k_matrix = pd.DataFrame(index=rxnIDlist, columns=alpha)
+    # simulate fluxes distribution in different growth rate conditions
     for i in range(len(alpha)):
-        FC['flux_MAX'] = optimal_production.optim_production_simulating(model=model, target=targetID, c_source=c_source,c_uptake= c_uptake,alpha=alpha[i], tol=tol, model_type=model_type)
+        growth=alpha[i]*max_growth
+        model.reactions.get_by_id(gr_rxnID).bounds= growth-tol, growth
+        FC['flux_MAX'] = pprotFBA.ppFBA(model=model, target=targetID, c_source=c_source,c_uptake= c_uptake, model_type=model_type)
         v_matrix.iloc[:, i] = FC['flux_MAX']
         k_matrix.iloc[:, i] = FC['flux_MAX'] / FC['flux_WT']
 

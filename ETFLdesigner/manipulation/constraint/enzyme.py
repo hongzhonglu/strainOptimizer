@@ -7,7 +7,7 @@ from etfl.optim.constraints import ModelConstraint
 from pytfa.optim.utils import symbol_sum
 
 
-def ETFL_constrain_enz_conc(model,enzymes_bounds,tol=1e-10):
+def ETFL_constrain_enz_conc(model,enzymes_bounds,tol_ratio=0.01):
     '''add constraint for enzyme concentration in ETFL model
     parameters:
         model: ETFL model
@@ -20,20 +20,26 @@ def ETFL_constrain_enz_conc(model,enzymes_bounds,tol=1e-10):
         enz_vars = model.get_variables_of_type('EnzymeVariable')
         enz_var=enz_vars.get_by_id(enzID)
         exp=symbol_sum([enz_var])
+        lb=enzymes_bounds.loc[enzID,'lb']
+        ub=enzymes_bounds.loc[enzID,'ub']
+        if lb>ub:
+            print(enzID,"has a lower bound larger than upper bound")
+            lb=lb*(1-tol_ratio)
+            ub=ub*(1+tol_ratio)
         model.add_constraint(
             kind=ModelConstraint,
             hook=model,
             expr=exp,
             id_='enz_conc_'+enzID,
-            lb=enzymes_bounds.loc[enzID,'lb'],
-            ub=enzymes_bounds.loc[enzID,'ub']
+            lb=lb,
+            ub=ub
         )
         # enz_const=model.constraints.get_by_id('MODC_enz_conc_'+enzID)
     model.repair()
     return model
 
 
-def ecGEM_constrain_enz_conc(model,enzymes_bounds,tol=1e-10):
+def ecGEM_constrain_enz_conc(model,enzymes_bounds,tol_ratio=0.01):
     '''
     add constraint for enzyme concentration in ecGEM model
     parameters:
@@ -50,7 +56,9 @@ def ecGEM_constrain_enz_conc(model,enzymes_bounds,tol=1e-10):
             model.reactions.get_by_id(enzID).bounds=lb,ub
         else:
             print(enzID,"has a lower bound larger than upper bound")
-            model.reactions.get_by_id(enzID).bounds=lb,ub+tol
+            lb=lb*(1-tol_ratio)
+            ub=ub*(1+tol_ratio)
+            model.reactions.get_by_id(enzID).bounds=lb,ub
 
 
     return model
