@@ -73,8 +73,6 @@ growth = ecoli.optimize()
 ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = growth.objective_value*0.8, growth.objective_value*0.8
 
 
-
-
 # set the metabolite production（succinate） as the objective function
 ecoli.objective = 'EX_succ_e'
 ecoli.objective.direction = 'max'
@@ -88,17 +86,16 @@ ecoli.objective = 'EX_glc__D_e'
 ecoli.objective.direction = 'max'
 glucose_uptake = ecoli.optimize()
 # fix glucose uptake
-ecoli.reactions.get_by_id('EX_glc__D_e').bounds = glucose_uptake.objective_value, 0
+ecoli.reactions.get_by_id('EX_glc__D_e').bounds = glucose_uptake.objective_value, glucose_uptake.objective_value
 
-"""
+
 # minimization the enzyme usage to get the protein abundance:
 obj_expr = symbol_sum([ecoli.enzymes.dummy_enzyme.variable])
 set_objective(ecoli, obj_expr)
 ecoli.objective_direction = 'max'
 ecoli.optimize()
-dummy_enzyme_max = ecoli.optimize()
-# then fix the dummy enzyme?
-"""
+
+
 
 
 
@@ -124,25 +121,27 @@ out_new = dict()
 for x,y in out.items():
     if "EZ_" in x:
         x_new = x.replace('EZ_', '')
-        if "dummy_enzyme" in x_new:
-            print(x_new)
-        else:
-            out_new[x_new] = y
+        #if "dummy_enzyme" in x_new:
+        #    print(x_new)
+        #else:
+        out_new[x_new] = y
 all_enzyme_ID = out_new.keys()
+
 
 
 
 ## give a disturbation
 ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = 0, 3 # first relax the above constraints
 ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 15
-
 # Here, we select PGI as a test example, first get its minimal abundance
 test_pro_abundance = out_new['PGI']
 ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme='EZ_PGI', ub0=test_pro_abundance*3)
-
-
-## after disturbation, we need fix the max glucose uptake rate
+## after disturbation, we need refix the max glucose uptake rate
 ecoli.reactions.get_by_id('EX_glc__D_e').bounds = -6, -6
+
+
+
+
 
 
 # run MOMA of protein resource adjust
@@ -159,12 +158,14 @@ for id in all_enzyme_ID:
     ss2.append(xx)
 """
 
+"""
 # version 1
+# when using this procedure, glucose uptake rate should be decreased to 4.25 mmol/gDW.h
 ss2 = []
 for id in all_enzyme_ID:
     xx = (1-(ecoli.enzymes.get_by_id(id).variable + 1e-07)/(out_new[id] + 1e-07))**2
     ss2.append(xx)
-
+"""
 
 
 
@@ -179,6 +180,8 @@ for id in all_enzyme_ID:
     #xx = (ecoli.enzymes.get_by_id(id).variable - out_new[id])**2
     xx = (1-(ecoli.enzymes.get_by_id(id).variable)/(out_new[id]))**2
     ss2.append(xx)
+
+
 
 
 """
@@ -223,4 +226,7 @@ plt.xlim(-10, 0)
 plt.ylim(-10, 0)
 plt.xlabel("log10(before)")
 plt.ylabel("log10(after)")
+
+
+
 
