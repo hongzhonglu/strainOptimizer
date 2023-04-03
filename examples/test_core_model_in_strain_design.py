@@ -55,19 +55,22 @@ solver = 'optlang-gurobi'
 # test related to strain design method development
 ecoli = load_json_model("examples/models/ecoli/ecoli_core_curated.json", solver=solver)
 
-
+# turn off by-product
+ecoli.reactions.get_by_id('EX_for_e').bounds = 0,  0
+ecoli.reactions.get_by_id('EX_ac_e').bounds = 0,  0
+ecoli.reactions.get_by_id('EX_pyr_e').bounds = 0,  0
+ecoli.reactions.get_by_id('EX_lac__D_e').bounds = 0,  0
+ecoli.reactions.get_by_id('EX_etoh_e').bounds = 0,  0
+ecoli.reactions.get_by_id('EX_acald_e').bounds = 0,  0
 
 # definition of the initial state:
 # firstly set growth as the objective function
 ecoli.objective = "Biomass_Ecoli_core"
 ecoli.objective_direction = 'max'
 growth = ecoli.optimize()
-# fix growth at 50% of its max value
-ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = growth.objective_value*0.5, growth.objective_value*0.5
 
-# turn off by-product
-ecoli.reactions.get_by_id('EX_for_e').bounds = 0,  0
-ecoli.reactions.get_by_id('EX_ac_e').bounds = 0,  0
+# fix growth at 80% of its max value
+ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = growth.objective_value*0.8, growth.objective_value*0.8
 
 
 
@@ -77,16 +80,27 @@ ecoli.objective = 'EX_succ_e'
 ecoli.objective.direction = 'max'
 sol2 = ecoli.optimize()
 #ecoli.reactions.get_by_id('EX_succ_e').bounds = sol2.objective_value, sol2.objective_value
-ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 0.05
+ecoli.reactions.get_by_id('EX_succ_e').bounds = 2, 2
 
 
+# minimize glucose uptake
+ecoli.objective = 'EX_glc__D_e'
+ecoli.objective.direction = 'max'
+glucose_uptake = ecoli.optimize()
+# fix glucose uptake
+ecoli.reactions.get_by_id('EX_glc__D_e').bounds = glucose_uptake.objective_value, 0
 
+"""
 # minimization the enzyme usage to get the protein abundance:
 obj_expr = symbol_sum([ecoli.enzymes.dummy_enzyme.variable])
 set_objective(ecoli, obj_expr)
 ecoli.objective_direction = 'max'
 ecoli.optimize()
-sol3 = ecoli.optimize()
+dummy_enzyme_max = ecoli.optimize()
+# then fix the dummy enzyme?
+"""
+
+
 
 # how to output the enzyme concentration
 ret = dict()
@@ -105,44 +119,65 @@ result = pd.DataFrame({'enzymeID': pro_abundance.index, 'reference': pro_abundan
 result.to_excel("examples/result/core_model_abundance.xlsx")
 
 # obtain the reference protein abundance
-
 out = prep_sol(substrate_uptake=-10, model=ecoli)
 out_new = dict()
 for x,y in out.items():
     if "EZ_" in x:
         x_new = x.replace('EZ_', '')
-        if x_new is not "dummy_enzyme":
+        if "dummy_enzyme" in x_new:
+            print(x_new)
+        else:
             out_new[x_new] = y
 all_enzyme_ID = out_new.keys()
 
 
-# give a disturbation
-ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = 0, 3# first relax the above constraints
-ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 1000
-ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme = 'EZ_PGI', ub0=0.00087*3)
+
+## give a disturbation
+ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = 0, 3 # first relax the above constraints
+ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 15
+
+# Here, we select PGI as a test example, first get its minimal abundance
+test_pro_abundance = out_new['PGI']
+ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme='EZ_PGI', ub0=test_pro_abundance*3)
 
 
-# calculate the max glucose uptake after disturbation
-ecoli.reactions.get_by_id('EX_glc__D_e').bounds = -10, 0
-
-
-
-
+## after disturbation, we need fix the max glucose uptake rate
+ecoli.reactions.get_by_id('EX_glc__D_e').bounds = -6, -6
 
 
 # run MOMA of protein resource adjust
 def symbol_sum_MOMA(variables):
     from sympy import Add
     return Add(*variables)
-ss = []
+
+
+"""
+#  Not used
+ss2 = []
 for id in all_enzyme_ID:
     xx = (ecoli.enzymes.get_by_id(id).variable - out_new[id])**2
-    ss.append(xx)
+    ss2.append(xx)
+"""
 
-
+# version 1
 ss2 = []
 for id in all_enzyme_ID:
     xx = (1-(ecoli.enzymes.get_by_id(id).variable + 1e-07)/(out_new[id] + 1e-07))**2
+    ss2.append(xx)
+
+
+
+
+# version 2 filter enzymes with zero values
+out_new_filter = {}
+for x, y in out_new.items():
+    if y > 1e-07:
+        out_new_filter[x] = y
+all_enzyme_ID = out_new_filter.keys()
+ss2 = []
+for id in all_enzyme_ID:
+    #xx = (ecoli.enzymes.get_by_id(id).variable - out_new[id])**2
+    xx = (1-(ecoli.enzymes.get_by_id(id).variable)/(out_new[id]))**2
     ss2.append(xx)
 
 
@@ -179,7 +214,7 @@ result.to_excel("examples/result/abundance_before_and_after_MOMA.xlsx")
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import pearsonr
+
 
 plt.figure()
 sns.regplot(x=result['before'], y=result['after'], fit_reg=False)
@@ -188,6 +223,4 @@ plt.xlim(-10, 0)
 plt.ylim(-10, 0)
 plt.xlabel("log10(before)")
 plt.ylabel("log10(after)")
-
-
 
