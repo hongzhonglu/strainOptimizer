@@ -49,7 +49,7 @@ def ppFBA(model, target,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
             obj_expr = symbol_sum([model.enzymes.dummy_enzyme.variable])
             set_objective(model, obj_expr)
             model.objective_direction = 'max'
-            sol2 = safe_optim(model)
+            sol2 = model.optimize()
         # for ecGEM model: minimize protein pool pseudo rxn
         elif model_type=='ecGEM':
             prot_pool_rxnID='prot_pool_exchange'
@@ -94,7 +94,7 @@ def etfl_ppFBA_prot_conc(model, target,c_source,c_uptake=1):
     all_enzIDlist= [enz.id for enz in model.enzymes]
 
     # 2.Fix optimal value for objective and minimize total protein usage
-    if sol.status == 'optimal':
+    if model.solver.status == 'optimal':
         model.reactions.get_by_id(target).bounds = max_obj, max_obj
         # for etfl model: minimize enzyme usage by maxing dummy enzyme
         obj_expr = symbol_sum([model.enzymes.dummy_enzyme.variable])

@@ -2,7 +2,7 @@
 # date : 2023/3/18 
 # author : wangh
 
-def cal_max_yield(model,targetID,c_source,c_uptake,model_type='etfl'):
+def cal_max_yield(model,targetID,c_source,c_uptake,model_type='etfl',tol_ratio=0.001):
     '''calculate the maximum yield of the target product
     parameters:
         model: ETFL model
@@ -24,7 +24,7 @@ def cal_max_yield(model,targetID,c_source,c_uptake,model_type='etfl'):
     if model.solver.status != 'optimal':
         return 0,0
     # 3. fix the max target product production and minimize the C source uptake
-    model.reactions.get_by_id(targetID).bounds=max_prod,max_prod
+    model.reactions.get_by_id(targetID).bounds=max_prod*(1-tol_ratio),max_prod
     if model_type=='etfl':
         model.reactions.get_by_id(c_source).bounds=-c_uptake,0
         model.objective = c_source

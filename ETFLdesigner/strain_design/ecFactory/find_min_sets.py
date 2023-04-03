@@ -13,7 +13,6 @@ from ETFLdesigner.ETFLdesigner.manipulation.constraint import enzyme
 
 def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_fva_result,gene_enz_dict,model_type='etfl',tol_ratio=0.01):
 
-
     #step 1. construct optimal production mutant
     mutant_model=model.copy()
     target_genes_enzfva_result=gene_enz_fva_result.loc[geneIDlist]

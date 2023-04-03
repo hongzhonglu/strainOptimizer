@@ -53,7 +53,6 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
                               c_source=c_source,
                               c_uptake=c_uptake,
                               alphaLims=alphaLims,
-
                               Nsteps=Nsteps,
                               model_type=model_type)
     # Format results table
