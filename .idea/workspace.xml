@@ -2,9 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="070b63d6-829e-449a-bb44-4daeae40ea39" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/result/abundance_before_and_after_MOMA.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/examples/result/abundance_before_and_after_MOMA.xlsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/result/core_model_abundance.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/examples/result/core_model_abundance.xlsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test_core_model_in_strain_design.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

@@ -78,14 +78,14 @@ ecoli.objective = 'EX_succ_e'
 ecoli.objective.direction = 'max'
 sol2 = ecoli.optimize()
 #ecoli.reactions.get_by_id('EX_succ_e').bounds = sol2.objective_value, sol2.objective_value
-ecoli.reactions.get_by_id('EX_succ_e').bounds = 2, 2
+ecoli.reactions.get_by_id('EX_succ_e').bounds = 1, 1
 
 
 # minimize glucose uptake
 ecoli.objective = 'EX_glc__D_e'
 ecoli.objective.direction = 'max'
 glucose_uptake = ecoli.optimize()
-# fix glucose uptake
+# fix glucose uptake. Here actually the glucose uptake rate was fixed at a sub-optimal value
 ecoli.reactions.get_by_id('EX_glc__D_e').bounds = glucose_uptake.objective_value, glucose_uptake.objective_value
 
 
@@ -94,8 +94,6 @@ obj_expr = symbol_sum([ecoli.enzymes.dummy_enzyme.variable])
 set_objective(ecoli, obj_expr)
 ecoli.objective_direction = 'max'
 ecoli.optimize()
-
-
 
 
 
