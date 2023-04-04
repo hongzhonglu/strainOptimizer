@@ -11,7 +11,8 @@ from ETFLdesigner.ETFLdesigner.analysis import optimal_yield
 from ETFLdesigner.ETFLdesigner.manipulation.constraint import enzyme
 
 
-def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_fva_result,gene_enz_dict,tol=1e-10,model_type='etfl'):
+def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_fva_result,gene_enz_dict,model_type='etfl',tol_ratio=0.01):
+
     #step 1. construct optimal production mutant
     mutant_model=model.copy()
     target_genes_enzfva_result=gene_enz_fva_result.loc[geneIDlist]
@@ -21,15 +22,14 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
         df_enz_bounds.loc[enzID,'lb']=target_genes_enzfva_result.loc[geneID,'prod_minprot']
         df_enz_bounds.loc[enzID,'ub']=target_genes_enzfva_result.loc[geneID,'prod_max']
     if model_type=='etfl':
-        mutant_model=enzyme.ETFL_constrain_enz_conc(mutant_model,enzymes_bounds=df_enz_bounds)
+        mutant_model=enzyme.ETFL_constrain_enz_conc(mutant_model,enzymes_bounds=df_enz_bounds,tol_ratio=tol_ratio)
     elif model_type=='ecGEM':
-        mutant_model=enzyme.ecGEM_constrain_enz_conc(mutant_model,enzymes_bounds=df_enz_bounds)
+        mutant_model=enzyme.ecGEM_constrain_enz_conc(mutant_model,enzymes_bounds=df_enz_bounds,tol_ratio=tol_ratio)
 
     # calculate optimal production yield
     # fix carbon source uptake
     if model_type=='etfl':
         mutant_model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
-
         growth_id = mutant_model.growth_reaction.id
     elif model_type=='ecGEM':
         mutant_model.reactions.get_by_id(c_source).bounds=c_uptake,c_uptake
@@ -40,7 +40,11 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
     exp_gr=expYield*c_uptake*c_source_MW
     mutant_model.reactions.get_by_id(growth_id).bounds=exp_gr,exp_gr
     # calculate optimal production yield,and optimal production rate
-    opt_prod_yield, opt_prod_rate=optimal_yield.cal_max_yield(model=mutant_model,targetID=targetID,c_source=c_source,c_uptake=c_uptake,tol=tol,model_type=model_type)
+    opt_prod_yield, opt_prod_rate=optimal_yield.cal_max_yield(model=mutant_model,
+                                                              targetID=targetID,
+                                                              c_source=c_source,
+                                                              c_uptake=c_uptake,
+                                                              model_type=model_type)
     print('optimal production yield is: ',opt_prod_yield)
     print('optimal production rate is: ',opt_prod_rate)
     optimal_prod={'opt_prod_yield':opt_prod_yield,'opt_prod_rate':opt_prod_rate}
@@ -58,19 +62,27 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
             prod_ub=enz_conc_constriant.ub
             prod_lb=enz_conc_constriant.lb
             # convert to WT-like constraint
-            enz_conc_constriant.bounds=gene_enz_fva_result.loc[gene,'wt_minprot'],gene_enz_fva_result.loc[gene,'wt_max']
-            # enz_conc_constriant.lb=gene_enz_fva_result.loc[gene,'wt_minprot']
-            # enz_conc_constriant.ub=gene_enz_fva_result.loc[gene,'wt_max']
+            wt_ub=gene_enz_fva_result.loc[gene,'wt_max']
+            wt_lb=gene_enz_fva_result.loc[gene,'wt_minprot']
+            if wt_lb>wt_ub:
+                wt_lb=wt_lb*(1-tol_ratio)
+                wt_ub=wt_ub*(1+tol_ratio)
+            enz_conc_constriant.bounds=wt_lb,wt_ub
         elif model_type=='ecGEM':
             prot_pseudo_rxn=mutant_model.reactions.get_by_id(enzID)
             prod_bounds=prot_pseudo_rxn.bounds
             wt_lb=gene_enz_fva_result.loc[gene,'wt_minprot']
             wt_ub=gene_enz_fva_result.loc[gene,'wt_max']
             if wt_lb>wt_ub:
-                wt_ub+=tol
+                wt_ub=wt_ub*(1+tol_ratio)
+                wt_lb=wt_lb*(1-tol_ratio)
             mutant_model.reactions.get_by_id(enzID).bounds=wt_lb,wt_ub
         # calculate mod_prod_yield and mod_production_rate
-        mod_prod_yield, mod_prod_rate=optimal_yield.cal_max_yield(mutant_model,targetID,c_source,c_uptake,tol=tol,model_type=model_type)
+        mod_prod_yield, mod_prod_rate=optimal_yield.cal_max_yield(mutant_model,
+                                                                  targetID,
+                                                                  c_source,
+                                                                  c_uptake,
+                                                                  model_type=model_type)
         # calculate score
         score1=mod_prod_yield/opt_prod_yield
         score2=mod_prod_rate/opt_prod_rate
@@ -93,8 +105,3 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
 
 
 
-
-# # test
-# geneIDlist=results['geneTable'][results['geneTable']['target_priority_leval']==2].index.tolist()
-# gene_enz_fva_result=results['gene_enz_fva_result']
-# gene_enz_dict=results['gene_enz_dict']

@@ -39,7 +39,7 @@ def compare_EUVR(gene_enz_fva_result):
     return df_gene_euvr_result
 
 
-def pprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-10,model_type='etfl'):
+def pprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1,model_type='etfl'):
     '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
     para:
         model: must be ETFL model
@@ -52,9 +52,9 @@ def pprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-10
         a pandas series of protein concentration
         '''
     if model_type=='etfl':
-        all_enz_concentration = pprotFBA.etfl_ppFBA_prot_conc(model=model, target=target,c_source=c_source,c_uptake=c_uptake,tol=tol)
+        all_enz_concentration = pprotFBA.etfl_ppFBA_prot_conc(model=model, target=target,c_source=c_source,c_uptake=c_uptake)
     elif model_type=='ecGEM':
-        all_enz_concentration = pprotFBA.ecGEM_ppFBA_prot_conc(model=model, target=target,c_source=c_source,c_uptake=c_uptake,tol=tol)
+        all_enz_concentration = pprotFBA.ecGEM_ppFBA_prot_conc(model=model, target=target,c_source=c_source,c_uptake=c_uptake)
 
     enzs_concentration=all_enz_concentration[enzymeIDlist]
 

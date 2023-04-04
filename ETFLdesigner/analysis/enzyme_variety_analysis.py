@@ -77,7 +77,7 @@ def etfl_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0
     return df
 
 
-def ecGEM_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0.99,obj_direction='max'):
+def ecGEM_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=1,obj_direction='max'):
     '''do enzyme variety analysis for ecGEM
        para:
            model: ecGEM model
