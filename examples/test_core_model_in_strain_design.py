@@ -132,10 +132,17 @@ all_enzyme_ID = out_new.keys()
 ecoli.reactions.get_by_id('Biomass_Ecoli_core').bounds = 0, 3 # first relax the above constraints
 ecoli.reactions.get_by_id('EX_succ_e').bounds = 0, 15
 # Here, we select PGI as a test example, first get its minimal abundance
-test_pro_abundance = out_new['PGI']
-ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme='EZ_PGI', ub0=test_pro_abundance*3)
+
+# target enzyme
+
+test_enz = 'ENO' # test another enzyme
+test_enz = 'GLUDy' # test another enzyme
+test_enz = 'PGI' # good example
+test_enz = 'PGM_inferred_2' # good example
+test_pro_abundance = out_new[test_enz]
+ecoli = constrain_enzymes_based_abs_abundance(model=ecoli, select_enzyme='EZ_' + test_enz, ub0=test_pro_abundance*3)
 ## after disturbation, we need refix the max glucose uptake rate
-ecoli.reactions.get_by_id('EX_glc__D_e').bounds = -6, -6
+ecoli.reactions.get_by_id('EX_glc__D_e').bounds = -5, -5
 
 
 
