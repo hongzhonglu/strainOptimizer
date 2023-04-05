@@ -12,7 +12,7 @@ from cobra.util.solver import set_objective
 from etfl.optim.utils import safe_optim
 
 
-def ppFBA(model, target,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
+def ppFBA(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
     """
    optimize for a given objective. Firstly,maximize the objective reaction,and then  a protein pool minimization is performed subject to the optimal
     production level.
@@ -30,24 +30,27 @@ def ppFBA(model, target,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
     - sol.x: (pandas.DataFrame) the optimized flux distribution
 
     """
+
     if model_type=='etfl':
         model.reactions.get_by_id(c_source).bounds = -c_uptake , -c_uptake
     elif model_type=='ecGEM':
         model.reactions.get_by_id(c_source).bounds = c_uptake, c_uptake
     # 1.set the target objective
-    model.objective = target
+    model.reactions.get_by_id(targetID).bounds = 0, 1000
+    model.objective = targetID
     model.objective_direction = 'max'
     sol = safe_optim(model)
     max_obj = sol.objective_value
 
     # 2.Fix optimal value for objective and minimize total protein usage
     if model.solver.status == 'optimal':
-        model.reactions.get_by_id(target).bounds = max_obj*(1-tol_ratio), max_obj
+        model.reactions.get_by_id(targetID).bounds = max_obj*(1-tol_ratio), max_obj*(1+tol_ratio)
         # 3.minimize the total proteins to reuduce the solution space
         # for etfl model: maximize dummy enzyme pseudo rxn
         if model_type=='etfl':
             obj_expr = symbol_sum([model.enzymes.dummy_enzyme.variable])
             set_objective(model, obj_expr)
+            # model.objective = 'dummy_peptide_translation'
             model.objective_direction = 'max'
             sol2 = model.optimize()
         # for ecGEM model: minimize protein pool pseudo rxn
@@ -62,18 +65,18 @@ def ppFBA(model, target,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
 
     # release the modified constraints and reset the objective as growth
     if model_type=='etfl':
-        model.reactions.get_by_id(target).bounds = 0, 1000
+        model.reactions.get_by_id(targetID).bounds = 0, 1000
         model.objective= model.growth_reaction.id
         model.objective_direction = 'max'
     elif model_type=='ecGEM':
-        model.reactions.get_by_id(target).bounds = 0, 1000
+        model.reactions.get_by_id(targetID).bounds = 0, 1000
         model.objective = 'r_2111'
         model.objective_direction = 'max'
 
     return sol2.fluxes
 
 
-def etfl_ppFBA_prot_conc(model, target,c_source,c_uptake=1):
+def etfl_ppFBA_prot_conc(model, targetID,c_source,c_uptake=1,tol_ratio=0.01):
     '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
     para:
         model: must be ETFL model
@@ -87,7 +90,7 @@ def etfl_ppFBA_prot_conc(model, target,c_source,c_uptake=1):
         '''
     model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
     # 1.Optimize for a given objective
-    model.objective = target
+    model.objective = targetID
     model.objective_direction = 'max'
     sol = safe_optim(model)
     max_obj = sol.objective_value
@@ -95,10 +98,13 @@ def etfl_ppFBA_prot_conc(model, target,c_source,c_uptake=1):
 
     # 2.Fix optimal value for objective and minimize total protein usage
     if model.solver.status == 'optimal':
-        model.reactions.get_by_id(target).bounds = max_obj, max_obj
-        # for etfl model: minimize enzyme usage by maxing dummy enzyme
+        model.reactions.get_by_id(targetID).bounds = max_obj*(1-tol_ratio), max_obj
+        # model.reactions.get_by_id(targetID).update_bounds()
+        # for etfl model: method 1:minimize enzyme usage by maxing dummy enzyme : not stable
         obj_expr = symbol_sum([model.enzymes.dummy_enzyme.variable])
         set_objective(model, obj_expr)
+        # method 2:max dummy enzyme transcription
+        # model.objective='dummy_peptide_translation'
         model.objective_direction = 'max'
         safe_optim(model)
         # get protein concentration
@@ -106,8 +112,8 @@ def etfl_ppFBA_prot_conc(model, target,c_source,c_uptake=1):
         for enzID in all_enzIDlist:
             prot_conc[enzID] = model.enzymes.get_by_id(enzID).scaled_X
         # restore the original bounds and objective
-        model.reactions.get_by_id(target).bounds = 0, 1000
-        model.objective = target
+        model.reactions.get_by_id(targetID).bounds = 0, 1000
+        model.objective = targetID
         model.objective_direction = 'max'
         return prot_conc
 
@@ -116,7 +122,7 @@ def etfl_ppFBA_prot_conc(model, target,c_source,c_uptake=1):
         raise Exception('The model cannot be solved to optimality')
 
 
-def ecGEM_ppFBA_prot_conc(model, target,c_source,c_uptake=1):
+def ecGEM_ppFBA_prot_conc(model, targetID,c_source,c_uptake=1,tol_ratio=0.01):
     '''use minprotFBA to predict target proteins concentration(1/3600 mmol/gDW)
     para:
         model: must be ecGEM model
@@ -128,7 +134,7 @@ def ecGEM_ppFBA_prot_conc(model, target,c_source,c_uptake=1):
         return:
         a pandas series of protein concentration'''
 
-    fluxes=ppFBA(model=model, target=target,c_source=c_source,c_uptake=c_uptake,model_type='ecGEM')
+    fluxes=ppFBA(model=model, targetID=targetID,c_source=c_source,c_uptake=c_uptake,model_type='ecGEM',tol_ratio=tol_ratio)
     all_prot_rxnIDlist=[rxn.id for rxn in model.reactions if rxn.id.startswith('draw_prot_')]
     all_prot_conc=fluxes[all_prot_rxnIDlist]
 

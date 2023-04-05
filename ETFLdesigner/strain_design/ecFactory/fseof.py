@@ -67,6 +67,9 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
     if c_uptake is None:
         c_uptake = 1
 
+    gluc_MW=0.180156 #g/mmol
+    tol_ratio=0.01
+
     #step 1: build reactions k_matrix
     # Simulate WT (100% max growth):
     FC = {}
@@ -75,11 +78,12 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
     elif model_type == 'ecGEM':
         gr_rxnID = 'r_2111'
     FC['flux_WT'] = pprotFBA.ppFBA(model=model,
-                                   target=gr_rxnID,
+                                   targetID=gr_rxnID,
                                    c_source=c_source,
                                    c_uptake=c_uptake,
                                    model_type=model_type)
-    max_growth = FC['flux_WT'][gr_rxnID]
+    # max_growth = FC['flux_WT'][gr_rxnID]
+    # print('simulate WT-like:',max_growth)
 
     # simulate production in different suboptimal growth rate conditions
     FC['alpha'] = alpha
@@ -89,9 +93,10 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
     k_matrix = pd.DataFrame(index=rxnIDlist, columns=alpha)
     # simulate fluxes distribution in different growth rate conditions
     for i in range(len(alpha)):
-        growth=alpha[i]*max_growth
-        model.reactions.get_by_id(gr_rxnID).bounds= growth-tol, growth
-        FC['flux_MAX'] = pprotFBA.ppFBA(model=model, target=targetID, c_source=c_source,c_uptake= c_uptake, model_type=model_type)
+        biomass_yield=alpha[i]
+        growth=biomass_yield*c_uptake*gluc_MW
+        model.reactions.get_by_id(gr_rxnID).bounds= growth*(1-tol_ratio), growth
+        FC['flux_MAX'] = pprotFBA.ppFBA(model=model, targetID=targetID, c_source=c_source,c_uptake= c_uptake, model_type=model_type,tol_ratio=tol_ratio)
         v_matrix.iloc[:, i] = FC['flux_MAX']
         k_matrix.iloc[:, i] = FC['flux_MAX'] / FC['flux_WT']
 

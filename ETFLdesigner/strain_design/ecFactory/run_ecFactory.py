@@ -119,7 +119,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
 
     # calculate the protein abundance by parsimonious ptoteins FBA for optimal production condition
     prod_minprotFBA_protconc = pprotFBA_prot_conc(model=model,
-                                                  target=targetID,
+                                                  targetID=targetID,
                                                   enzymeIDlist=target_enz_list,
                                                     c_source=c_source,
                                                   c_uptake=c_uptake,
@@ -147,15 +147,11 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     # model.reactions.get_by_id(targetID).bounds = max_prod*0.01, max_prod*0.01
     print('  - Maximize biomass production')
     # set growth as objective
-    model.reactions.get_by_id(growth_rxnID).bounds = 0, 1000
     model.objective = growth_rxnID
     model.objective_direction = 'max'
-    # sol=safe_optim(model)
-    # max_gr=sol.objective_value
-    # print(' Max biomass = ' + str(max_gr) + ' h-1')
     # run parsimonious protein usages FBA for max growth
     wt_minprotFBA_protconc=pprotFBA_prot_conc(model=model,
-                                              target=growth_rxnID,
+                                              targetID=growth_rxnID,
                                               enzymeIDlist=target_enz_list,
                                               c_source=c_source,
                                               c_uptake=c_uptake,
@@ -175,7 +171,6 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
 
     # release biomass constraints
     model.reactions.get_by_id(growth_rxnID).bounds = 0, 1000
-    # model.reactions.get_by_id(targetID).bounds = 0, 1000
 
     # 5.3 - Discard some targets according to the EUVA results
     print(str(step) + '.3-  **** Discarding targets according to EUVA results ****')
