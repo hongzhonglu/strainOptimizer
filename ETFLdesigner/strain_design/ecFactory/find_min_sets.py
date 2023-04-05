@@ -7,63 +7,12 @@
 '''
 import pandas as pd
 import numpy as np
-from etfl.optim.constraints import ModelConstraint
-from pytfa.optim.utils import symbol_sum
+from ETFLdesigner.ETFLdesigner.analysis import optimal_yield
+from ETFLdesigner.ETFLdesigner.manipulation.constraint import enzyme
 
 
-def cal_max_yield(model,targetID,c_source,c_uptake,tol=1e-10):
-    '''calculate the maximum yield of the target product
-    parameters:
-        model: ETFL model
-        targetID: str, the objective reaction ID
-        c_source: str, the carbon source uptake reaction ID
-        c_uptake: float, the carbon source uptake rate
-    return:
-        max_yield: float, the maximum yield of the target product
-    '''
-    # 1. fix carbon source uptake
-    model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
-    # 2. calculate optimal production yield
-    model.objective=model.reactions.get_by_id(targetID)
-    model.objective_direction='max'
-    max_prod=model.slim_optimize()
-    # 3. fix the max target product production and minimize the C source uptake
-    model.reactions.get_by_id(targetID).bounds=max_prod-tol,max_prod+tol
-    model.objective=c_source
-    model.objective_direction='min'
-    opt_c_uptake=-model.slim_optimize()
-    max_yield=max_prod/opt_c_uptake
+def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_fva_result,gene_enz_dict,model_type='etfl',tol_ratio=0.01):
 
-    return max_yield, max_prod
-
-
-def constrain_enz_conc(model,enzymes_bounds):
-    '''add constraint for enzyme concentration in ETFL model
-    parameters:
-        model: ETFL model
-        enzymes_bounds: pd.DataFrame, columns=['lb','ub'], index=enzymeID.!! lb and ub should be the scaled values
-    return:
-        model: modified ETFL model
-    '''
-    enzymeIDlist=enzymes_bounds.index.tolist()
-    for enzID in enzymeIDlist:
-        enz_vars = model.get_variables_of_type('EnzymeVariable')
-        enz_var=enz_vars.get_by_id(enzID)
-        exp=symbol_sum([enz_var])
-        model.add_constraint(
-            kind=ModelConstraint,
-            hook=model,
-            expr=exp,
-            id_='enz_conc_'+enzID,
-            lb=enzymes_bounds.loc[enzID,'lb'],
-            ub=enzymes_bounds.loc[enzID,'ub']
-        )
-        # enz_const=model.constraints.get_by_id('MODC_enz_conc_'+enzID)
-    model.repair()
-    return model
-
-
-def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_fva_result,gene_enz_dict,tol=1e-10):
     #step 1. construct optimal production mutant
     mutant_model=model.copy()
     target_genes_enzfva_result=gene_enz_fva_result.loc[geneIDlist]
@@ -72,18 +21,30 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
         enzID=gene_enz_dict[geneID][0]
         df_enz_bounds.loc[enzID,'lb']=target_genes_enzfva_result.loc[geneID,'prod_minprot']
         df_enz_bounds.loc[enzID,'ub']=target_genes_enzfva_result.loc[geneID,'prod_max']
-
-    mutant_model=constrain_enz_conc(mutant_model,enzymes_bounds=df_enz_bounds)
+    if model_type=='etfl':
+        mutant_model=enzyme.ETFL_constrain_enz_conc(mutant_model,enzymes_bounds=df_enz_bounds,tol_ratio=tol_ratio)
+    elif model_type=='ecGEM':
+        mutant_model=enzyme.ecGEM_constrain_enz_conc(mutant_model,enzymes_bounds=df_enz_bounds,tol_ratio=tol_ratio)
 
     # calculate optimal production yield
     # fix carbon source uptake
-    mutant_model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
+    if model_type=='etfl':
+        mutant_model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
+        growth_id = mutant_model.growth_reaction.id
+    elif model_type=='ecGEM':
+        mutant_model.reactions.get_by_id(c_source).bounds=c_uptake,c_uptake
+        growth_id = 'r_2111'
+
     # fix experimental biomass yield
     c_source_MW=0.180156   # g/mmol
     exp_gr=expYield*c_uptake*c_source_MW
-    mutant_model.growth_reaction.bounds=exp_gr,exp_gr
+    mutant_model.reactions.get_by_id(growth_id).bounds=exp_gr,exp_gr
     # calculate optimal production yield,and optimal production rate
-    opt_prod_yield, opt_prod_rate=cal_max_yield(mutant_model,targetID,c_source,c_uptake,tol=tol)
+    opt_prod_yield, opt_prod_rate=optimal_yield.cal_max_yield(model=mutant_model,
+                                                              targetID=targetID,
+                                                              c_source=c_source,
+                                                              c_uptake=c_uptake,
+                                                              model_type=model_type)
     print('optimal production yield is: ',opt_prod_yield)
     print('optimal production rate is: ',opt_prod_rate)
     optimal_prod={'opt_prod_yield':opt_prod_yield,'opt_prod_rate':opt_prod_rate}
@@ -91,15 +52,37 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
     #step 2. respectively convert each enzyme concentraction to WT-like constraints,and calculate the production yield ,and production rate
     df_min_set_result=pd.DataFrame(columns=['mod_prod_yield','mod_prod_rate','score'])
     for gene in geneIDlist:
-        enzID=gene_enz_dict[gene][0]
-        enz_conc_constriant=mutant_model.constraints['MODC_enz_conc_'+enzID]
-        prod_ub=enz_conc_constriant.ub
-        prod_lb=enz_conc_constriant.lb
-        # convert to WT-like constraint
-        enz_conc_constriant.lb=gene_enz_fva_result.loc[gene,'wt_minprot']
-        enz_conc_constriant.ub=gene_enz_fva_result.loc[gene,'wt_max']
+        enzID = gene_enz_dict[gene][0]
+        if enzID=='no enzyme':
+            print('gene %s has no enzyme'%gene)
+            continue
+        # constrain the enzyme concentration into WT-like respectly
+        if model_type=='etfl':
+            enz_conc_constriant=mutant_model.constraints['MODC_enz_conc_'+enzID]
+            prod_ub=enz_conc_constriant.ub
+            prod_lb=enz_conc_constriant.lb
+            # convert to WT-like constraint
+            wt_ub=gene_enz_fva_result.loc[gene,'wt_max']
+            wt_lb=gene_enz_fva_result.loc[gene,'wt_minprot']
+            if wt_lb>wt_ub:
+                wt_lb=wt_lb*(1-tol_ratio)
+                wt_ub=wt_ub*(1+tol_ratio)
+            enz_conc_constriant.bounds=wt_lb,wt_ub
+        elif model_type=='ecGEM':
+            prot_pseudo_rxn=mutant_model.reactions.get_by_id(enzID)
+            prod_bounds=prot_pseudo_rxn.bounds
+            wt_lb=gene_enz_fva_result.loc[gene,'wt_minprot']
+            wt_ub=gene_enz_fva_result.loc[gene,'wt_max']
+            if wt_lb>wt_ub:
+                wt_ub=wt_ub*(1+tol_ratio)
+                wt_lb=wt_lb*(1-tol_ratio)
+            mutant_model.reactions.get_by_id(enzID).bounds=wt_lb,wt_ub
         # calculate mod_prod_yield and mod_production_rate
-        mod_prod_yield, mod_prod_rate=cal_max_yield(mutant_model,targetID,c_source,c_uptake,tol=tol)
+        mod_prod_yield, mod_prod_rate=optimal_yield.cal_max_yield(mutant_model,
+                                                                  targetID,
+                                                                  c_source,
+                                                                  c_uptake,
+                                                                  model_type=model_type)
         # calculate score
         score1=mod_prod_yield/opt_prod_yield
         score2=mod_prod_rate/opt_prod_rate
@@ -111,16 +94,14 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
         df_min_set_result.loc[gene,'score']=score
 
         # convert back to original constraint
-        enz_conc_constriant.ub=prod_ub
-        enz_conc_constriant.lb=prod_lb
+        if model_type=='etfl':
+            enz_conc_constriant.ub=prod_ub
+            enz_conc_constriant.lb=prod_lb
+        elif model_type=='ecGEM':
+            mutant_model.reactions.get_by_id(enzID).bounds=prod_bounds
 
     return df_min_set_result,optimal_prod
 
 
 
 
-
-# # test
-# geneIDlist=results['geneTable'][results['geneTable']['target_priority_leval']==2].index.tolist()
-# gene_enz_fva_result=results['gene_enz_fva_result']
-# gene_enz_dict=results['gene_enz_dict']

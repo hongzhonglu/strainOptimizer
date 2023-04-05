@@ -4,11 +4,7 @@
 import numpy as np
 import pandas as pd
 from etfl.io.json import load_json_model
-from tqdm import tqdm
-from pytfa.analysis.variability import variability_analysis, _variability_analysis_element
-from pytfa.optim.utils import symbol_sum
-from cobra.util.solver import set_objective
-from etfl.optim.utils import fix_growth,release_growth,safe_optim
+from ETFLdesigner.ETFLdesigner.simulation import pprotFBA
 
 
 def compare_EUVR(gene_enz_fva_result):
@@ -43,8 +39,7 @@ def compare_EUVR(gene_enz_fva_result):
     return df_gene_euvr_result
 
 
-
-def minprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-10):
+def pprotFBA_prot_conc(model, targetID,enzymeIDlist,c_source,c_uptake=1,model_type='etfl'):
     '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
     para:
         model: must be ETFL model
@@ -56,37 +51,17 @@ def minprotFBA_prot_conc(model, target,enzymeIDlist,c_source,c_uptake=1, tol=1e-
     return:
         a pandas series of protein concentration
         '''
-    model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
-    # 1.Optimize for a given objective
-    model.objective = target
-    model.objective_direction = 'max'
-    sol = safe_optim(model)
-    max_obj = sol.objective_value
+    if model_type=='etfl':
+        all_enz_concentration = pprotFBA.etfl_ppFBA_prot_conc(model=model, targetID=targetID,c_source=c_source,c_uptake=c_uptake)
+    elif model_type=='ecGEM':
+        all_enz_concentration = pprotFBA.ecGEM_ppFBA_prot_conc(model=model, targetID=targetID,c_source=c_source,c_uptake=c_uptake)
 
-    # 2.Fix optimal value for objective and minimize total protein usage
-    if sol.status == 'optimal':
-        model.reactions.get_by_id(target).bounds = max_obj * (1 - tol), max_obj * (1 + tol)
-        # for etfl model: minimize enzyme usage by maxing dummy enzyme
-        obj_expr = symbol_sum([model.enzymes.dummy_enzyme.variable])
-        set_objective(model, obj_expr)
-        model.objective_direction = 'max'
-        safe_optim(model)
-        # get protein concentration
-        prot_conc = pd.Series()
-        for enzID in enzymeIDlist:
-            prot_conc[enzID] = model.enzymes.get_by_id(enzID).scaled_X
-        # restore the original bounds and objective
-        model.reactions.get_by_id(target).bounds = 0, 1000
-        model.objective = target
-        model.objective_direction = 'max'
-        return prot_conc
+    enzs_concentration=all_enz_concentration[enzymeIDlist]
 
-    else:
-        # print the error message
-        raise Exception('The model cannot be solved to optimality')
+    return enzs_concentration
 
 
-def genelist_to_enzymelist(model,genelist):
+def genelist_to_enzymelist(model,genelist,model_type='etfl'):
     '''
     get the enzyme list from a gene list
     para:
@@ -95,86 +70,46 @@ def genelist_to_enzymelist(model,genelist):
     return:
         a list of enzyme ID
     '''
-    # get all enzyme to gene dict
-    all_enzIDlist=[enz.id for enz in model.enzymes]
-    enz_geneDict={}
-    for enzID in all_enzIDlist:
-        enz_i_genelist=list(model.enzymes.get_by_id(enzID).composition.keys())
-        enz_i_gene_list_to_str='|'.join(enz_i_genelist)
-        enz_geneDict[enzID]=enz_i_gene_list_to_str
-    df_enz_gene=pd.Series(enz_geneDict)
-    # find target enzymes list
-    enzlist=[]
-    gene_enz_dict={}
-    for gene in genelist:
-        enzymes=df_enz_gene[df_enz_gene.str.contains(gene)].index.tolist()
-        gene_enz_dict[gene]=enzymes
-        enzlist=enzlist+enzymes
-    enzlist=list(set(enzlist))
+    if model_type=='etfl':
+        # get all enzyme to gene dict
+        all_enzIDlist=[enz.id for enz in model.enzymes]
+        enz_geneDict={}
+        for enzID in all_enzIDlist:
+            enz_i_genelist=list(model.enzymes.get_by_id(enzID).composition.keys())
+            enz_i_gene_list_to_str='|'.join(enz_i_genelist)
+            enz_geneDict[enzID]=enz_i_gene_list_to_str
+        df_enz_gene=pd.Series(enz_geneDict)
+        # find target enzymes list
+        enzlist=[]
+        gene_enz_dict={}
+        for gene in genelist:
+            enzymes=df_enz_gene[df_enz_gene.str.contains(gene)].index.tolist()
+            gene_enz_dict[gene]=enzymes
+            enzlist=enzlist+enzymes
+        enzlist=list(set(enzlist))
+
+    elif model_type=='ecGEM':
+        # gene_to_prot_dict
+        gene_to_prot_dict = {}
+        for g in model.genes:
+            geneID = g.id
+            for rxn in g.reactions:
+                if 'draw_prot_' in rxn.id:
+                    draw_prot_rxnID = rxn.id
+                    gene_to_prot_dict[geneID] = draw_prot_rxnID
+        all_enz_genes= list(gene_to_prot_dict.keys())
+        # find target enzymes list
+        enzlist=[]
+        gene_enz_dict={}
+        for geneID in genelist:
+            if geneID not in all_enz_genes:
+                gene_enz_dict[geneID]='no enzyme'
+            else:
+                enzID=gene_to_prot_dict[geneID]
+                enzlist.append(enzID)
+                gene_enz_dict[geneID]=[enzID]
 
     return enzlist,gene_enz_dict
-
-
-def enzymeFVA(model,enzymeIDlist,fraction_of_optimum=0.95):
-    '''do FVA for a list of enzymes
-    para:
-        model: must be ETFL model
-        enzymeIDlist: a list of enzyme ID
-        fraction_of_optimum: Requires that the objective value is at least the
-            fraction times maximum objective value.Must be <= 1.0. (default 0.95)
-    return:
-        a dataframe of FVA result
-        '''
-    # get the objective function
-    objective = model.objective
-    # get all enzyme variable
-    all_enz=model.get_variables_of_type('EnzymeVariable')
-    all_enzIDlist=[enz.id for enz in all_enz]
-    # get the target enzyme list
-    target_enzlist={}
-    for enzID in enzymeIDlist:
-        if enzID in all_enzIDlist:
-            target_enzlist[enzID]=model.enzymes.get_by_id(enzID).variable
-        else:
-            print(f"can't find Enzyme {enzID} in the {model.name}")
-    sol=safe_optim(model)
-    print(f"the objective value is {sol.objective_value}")
-    print(f"{model.objective_direction} objective expression {model.objective.expression}")
-
-    # fix old objective value
-    if model.solver.objective.direction == "max":
-        fva_old_objective = model.problem.Variable(
-            "fva_old_objective",
-            lb=fraction_of_optimum * model.solver.objective.value,
-        )
-    else:
-        fva_old_objective = model.problem.Variable(
-            "fva_old_objective",
-            ub=fraction_of_optimum * model.solver.objective.value,
-        )
-    fva_old_obj_constraint = model.problem.Constraint(
-        model.solver.objective.expression - fva_old_objective,
-        lb=0,
-        ub=0,
-        name="fva_old_objective_constraint",
-    )
-    model.add_cons_vars([fva_old_objective, fva_old_obj_constraint])
-
-    # do FVA
-    results = {'min':{}, 'max':{}}
-    for sense in ['min','max']:
-        for k,var in tqdm(target_enzlist.items(), desc=sense+'imizing'):
-            model.logger.debug(sense + '-' + k)
-            results[sense][k] = _variability_analysis_element(model,var,sense)
-
-    # remove fixed constraint and old objective
-    model.remove_cons_vars([fva_old_objective, fva_old_obj_constraint])
-    # restore old objective
-    model.objective = objective
-    df = pd.DataFrame(results)
-    df.rename(columns={'min':'minimum','max':'maximum'}, inplace = True)
-
-    return df
 
 
 def find_leaks(candidates, targetID, model,product_name):
@@ -258,7 +193,7 @@ def remove_essential_targets(candidates,essential_path=r'code_etfl/ETFLdesigner/
     return candidates
 
 
-def getMetGeneMatrix(model,geneIDlist=None):
+def getMetGeneMatrix(model,geneIDlist=None,model_type='etfl'):
     """
     Function that obtains a binary matrix in which rows represent metabolites and columns genes.
     Each non-zero coeffiecient represents a relationship between a gene and a metabolite
@@ -266,6 +201,7 @@ def getMetGeneMatrix(model,geneIDlist=None):
     Args:
     - model: (ETFL/ecGEM model) Model to obtain the matrix from
     - genes: (list) List of gene IDs or gene indexes to take from the model (Default: all genes in the model)
+    - model_type: (str) Type of model:'etfl'/'ecGEM' (Default: 'etfl')
 
     Returns:
     - GeneMetMatrix: (numpy array) Boolean matrix representing the relationships metabolites and genes
@@ -279,6 +215,10 @@ def getMetGeneMatrix(model,geneIDlist=None):
 
     # build metGeneMatrix
     allmets_ID=[m.id for m in model.metabolites]
+    if model_type=='ecGEM':
+        # remove all prot metabolites
+        allmets_ID=[m for m in allmets_ID if not m.startswith('prot_')]
+
     metGeneMatrix=pd.DataFrame(index=allmets_ID,columns=geneIDlist)
     for gID in geneIDlist:
         g=model.genes.get_by_id(gID)
@@ -286,7 +226,8 @@ def getMetGeneMatrix(model,geneIDlist=None):
         for rxn in rxnList:
             metList=list(rxn.metabolites.keys())
             for met in metList:
-                metGeneMatrix.loc[met.id,gID]=1
+                if met.id in allmets_ID:
+                    metGeneMatrix.loc[met.id,gID]=1
     metGeneMatrix=metGeneMatrix.fillna(0)
     metGeneMatrix=metGeneMatrix.astype(int)
     # remove rows with all zeros
