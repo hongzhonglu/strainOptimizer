@@ -16,19 +16,27 @@ product_name='heme_a'
 product_id='EX_heme_a'
 
 model2 = ecYeast.copy()
-qs=10
-model2.reactions.get_by_id("r_1714_REV").bounds = (0, qs)  # D-glucose exchange (reversible)
+model2.reactions.get_by_id("r_1714_REV").bounds = (0, 100)  # D-glucose exchange (reversible)
 model2.objective = {model2.reactions.r_2111: 1}
 fba_solution1 = model2.optimize()
-model2.reactions.get_by_id("r_2111").bounds = (0.1, 0.1)
 model2.objective = {model2.reactions.EX_heme_a: 1}
 #model2.objective = {model2.reactions.r_1899: 1}
 fba_solution2 = model2.optimize()
 result2 = productionEnvolpe(model=model2, biomassRxn='r_2111', targetRxn='EX_heme_a',substrateRxn='r_1714_REV', modelType = 'EC')
 
 
-
-
+# plot
+import matplotlib.pyplot as plt # For python 3.6: sudo apt-get install python3.6-tk   TO INSTALL Tkinter
+x1 = result2['biomass']
+y1l= result2['p_lb']
+y1 = result2['p_ub']
+plt.figure(figsize=(4,3))
+plt.plot(x1,y1, 'k',  color='red')
+plt.plot(x1,y1l, 'k',  color='red')
+#plt.plot((0.32, 0.32), (0, 0.35518), 'k-', color='red')
+plt.xlabel('growth(/h)')
+plt.ylabel('production(mmol/gDW.h)')
+plt.show()
 
 
 

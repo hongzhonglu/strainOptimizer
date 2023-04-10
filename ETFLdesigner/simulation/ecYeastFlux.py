@@ -97,6 +97,7 @@ def productionEnvolpe(model, biomassRxn, targetRxn, substrateRxn, modelType = 'E
     with model:
         for i in growth:
             print(i)
+            # min the production
             model.objective = {model.reactions.get_by_id(targetRxn): -1}
             model.reactions.get_by_id(targetRxn).lower_bound = 0
             model.reactions.get_by_id(biomassRxn).bounds = (i, i)
