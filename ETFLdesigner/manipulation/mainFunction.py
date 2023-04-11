@@ -478,10 +478,6 @@ def correctSomeWrongFormat(model0):
 
   return model0
 
-
-
-
-
 def produceMetaboliteList(model0):
   #produce the dataframe for the metabolites from yeastGEM
   met_list =[None]*len(model0.metabolites)
@@ -510,6 +506,7 @@ def produceGeneList(model0):
   return genelist
 
 
+
 def produceRxnList(model0):
   #produce the dataframe for the rxn from yeastGEM
   reaction_list =[None]*len(model0.reactions)
@@ -517,7 +514,9 @@ def produceRxnList(model0):
                               'equation':reaction_list,
                               'GPR':reaction_list,
                               'rxnID':reaction_list,
-                              'formula':reaction_list
+                              'formula':reaction_list,
+                              'lower_bound': reaction_list,
+                              'upper_bound': reaction_list
                               })
 
   for i, reaction in enumerate(model0.reactions):
@@ -526,14 +525,15 @@ def produceRxnList(model0):
       gem_dataframe['equation'][i] = reaction.reaction
       gem_dataframe['GPR'][i] = reaction.gene_reaction_rule
       gem_dataframe['rxnID'][i] = reaction.id
+      gem_dataframe['lower_bound'][i] = reaction.lower_bound
+      gem_dataframe['upper_bound'][i] = reaction.upper_bound
   gem_dataframe['ID'] = ['R'+ str(i) for i in range(0, len(model0.reactions))]
   gem_dataframe['GPR'] = gem_dataframe['GPR'].str.replace('__45__', '-')
   #replace the metabolite name in gem_dataframe
-  s0 = getRXNmetaboliteMapping(gem_dataframe['rxnID'], gem_dataframe['equation'])
+  s0 = getRXNmetaboliteMapping(model0, gem_dataframe['rxnID'], gem_dataframe['equation'])
   gem_dataframe['formula'] = multiMapping(s0['met_name'],s0['rxnID'],gem_dataframe['rxnID'],removeDuplicates=False)
   gem_dataframe['formula'] = gem_dataframe['formula'].str.replace(";", " ")
   return gem_dataframe
-
 
 
 def exchange(s1, subystem):
