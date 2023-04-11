@@ -38,6 +38,7 @@ def solveEcModel(model, obj_id, target_id, glucose_uptake ='r_1714_REV'):
     yield_p = solution2.fluxes[target_id]/solution2.fluxes[glucose_uptake]
     return yield_p
 
+
 # function
 # this function needed to be updated??
 def ecYeastMinimalMedia(model):
