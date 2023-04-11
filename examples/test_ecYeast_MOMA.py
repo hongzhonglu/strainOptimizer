@@ -9,9 +9,15 @@ from pytfa.optim.utils import symbol_sum
 from cobra.util.solver import set_objective
 import pandas as pd
 from ETFLdesigner.simulation.ecYeastFlux import *
+from ETFLdesigner.manipulation.mainFunction import *
+
+
 
 # heme model
-ecYeast=read_sbml_model('examples/models/yeast/heme_ecYeastGEM.xml')
+ecYeast = read_sbml_model('examples/models/yeast/heme_ecYeastGEM.xml')
+easy_model = produceRxnList(ecYeast)
+
+
 product_name='heme_a'
 product_id='EX_heme_a'
 
