@@ -145,8 +145,8 @@ for r in mutModel.reactions:
             to_add.extend([dist, const])
             obj_vars.append(dist ** 2)
 
+mutModel.add_cons_vars(to_add)#????????????????
 mutModel.objective = prob.Objective(add(obj_vars), direction="min", sloppy=True)
-### mutModel.add_cons_vars(to_add)#????????????????
 
 
 
