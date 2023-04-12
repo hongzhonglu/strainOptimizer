@@ -94,11 +94,13 @@ qs = fba_solution['r_1714_REV']
 uniprotID = 'P08417'
 proID = 'draw_prot_' + uniprotID
 target_pro = fba_solution[proID]
+
+
+
+
 mutModel = model2.copy()
 mutModel.reactions.get_by_id(proID).bounds = (target_pro*5, float('inf'))
 test = mutModel.optimize()
-
-
 
 # try to rewrite moma for ecModels specially!!
 """Provide minimization of metabolic adjustment (MOMA)."""
@@ -123,39 +125,36 @@ obj_vars = []
 for r in mutModel.reactions:
     if 'draw_prot_' in r.id:
         flux = fba_solution.fluxes[r.id]
-        dist = prob.Variable("moma_dist_" + r.id)
-        """
-        const = prob.Constraint(
-            r.flux_expression - dist,
-            lb=flux,
-            ub=flux,
-            name="moma_constraint_" + r.id,
-        )"""
-        const = prob.Constraint(
-            (r.flux_expression)/(1 - dist),
-            lb=flux,
-            ub=flux,
-            name="moma_constraint_" + r.id,
-        )
+        if flux > 0:
+            print(r.id)
+            dist = prob.Variable("moma_dist_" + r.id)
+            """
+            const = prob.Constraint(
+                r.flux_expression - dist,
+                lb=flux,
+                ub=flux,
+                name="moma_constraint_" + r.id,
+            )
+            """
+            const = prob.Constraint(
+                (r.flux_expression) / (1 - dist),
+                lb=flux,
+                ub=flux,
+                name="moma_constraint_" + r.id,
+            )
+            to_add.extend([dist, const])
+            obj_vars.append(dist ** 2)
 
-        to_add.extend([dist, const])
-        obj_vars.append(dist ** 2)
-mutModel.add_cons_vars(to_add)
 mutModel.objective = prob.Objective(add(obj_vars), direction="min", sloppy=True)
+### mutModel.add_cons_vars(to_add)#????????????????
+
+
+
 
 # solve
 test2 = mutModel.optimize()
 test2.fluxes['r_1714_REV']
 test2.fluxes['r_2111']
-
-
-
-
-
-
-
-
-
 
 
 
@@ -172,6 +171,8 @@ for id in rxnID:
 add_objective1 = symbol_sum_MOMA(ss2)
 new_objective = model2.problem.Objective(add_objective1, direction='min')
 """
+
+
 
 # generate objective function use an old way
 add_objective0 = []
