@@ -1,15 +1,15 @@
 import sys
 import os
-os.chdir('/Users/xluhon/Documents/GitHub/ETFLdesigner')
-sys.path.append(r"/Users/xluhon/Documents/GitHub/ETFLdesigner/ETFLdesigner")
+os.chdir(r'D:\code\github\etfl\ETFLdesigner')
+# sys.path.append(r"/Users/xluhon/Documents/GitHub/ETFLdesigner/ETFLdesigner")
 
 # load packages
 from cobra.io import load_matlab_model, read_sbml_model
 from pytfa.optim.utils import symbol_sum
 from cobra.util.solver import set_objective
 import pandas as pd
-from ETFLdesigner.simulation.ecYeastFlux import *
-from ETFLdesigner.manipulation.mainFunction import *
+from ETFLdesigner.ETFLdesigner.simulation.ecYeastFlux import *
+from ETFLdesigner.ETFLdesigner.manipulation.mainFunction import *
 
 
 
@@ -102,6 +102,7 @@ mutModel = model2.copy()
 mutModel.reactions.get_by_id(proID).bounds = (target_pro*5, float('inf'))
 test = mutModel.optimize()
 
+
 # try to rewrite moma for ecModels specially!!
 """Provide minimization of metabolic adjustment (MOMA)."""
 from typing import TYPE_CHECKING, Optional
@@ -113,6 +114,8 @@ from cobra.core import Model, Solution
 mutModel.solver = sutil.choose_solver(mutModel, qp=True)
 prob = mutModel.problem
 v = prob.Variable("moma_old_objective")
+# obj=test.objective_value
+# v.bounds =obj,obj
 c = prob.Constraint(
     mutModel.solver.objective.expression - v,
     lb=0.0,
@@ -122,33 +125,34 @@ c = prob.Constraint(
 to_add = [v, c]
 mutModel.objective = prob.Objective(Zero, direction="min", sloppy=True)
 obj_vars = []
-for r in mutModel.reactions:
+prot_rxns=mutModel.reactions.query(lambda x: 'draw_prot_' in x.id)
+for r in prot_rxns:
     if 'draw_prot_' in r.id:
         flux = fba_solution.fluxes[r.id]
         if flux > 0:
             print(r.id)
             dist = prob.Variable("moma_dist_" + r.id)
-            """
+            # """
             const = prob.Constraint(
                 r.flux_expression - dist,
                 lb=flux,
                 ub=flux,
                 name="moma_constraint_" + r.id,
             )
-            """
-            const = prob.Constraint(
-                (r.flux_expression) / (1 - dist),
-                lb=flux,
-                ub=flux,
-                name="moma_constraint_" + r.id,
-            )
-            to_add.extend([dist, const])
+            # """
+            # const = prob.Constraint(
+            #     (r.flux_expression) / (1 - dist),
+            #     lb=flux,
+            #     ub=flux,
+            #     name="moma_constraint_" + r.id,
+            # )                # 二次约束无法求解
+            rxn_to_add = [dist, const]
+            mutModel.add_cons_vars(rxn_to_add)
+            # to_add.extend([dist, const])
             obj_vars.append(dist ** 2)
 
-mutModel.add_cons_vars(to_add)#????????????????
+mutModel.add_cons_vars(to_add)#????????????????    # 每一组constraint 和 variable 无法放在一个list中一起加入
 mutModel.objective = prob.Objective(add(obj_vars), direction="min", sloppy=True)
-
-
 
 
 # solve
