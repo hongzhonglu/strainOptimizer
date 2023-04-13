@@ -129,6 +129,7 @@ prot_rxns=mutModel.reactions.query(lambda x: 'draw_prot_' in x.id)
 for r in prot_rxns:
     if 'draw_prot_' in r.id:
         flux = fba_solution.fluxes[r.id]
+        print(flux)
         if flux > 0:
             print(r.id)
             dist = prob.Variable("moma_dist_" + r.id)
@@ -146,8 +147,8 @@ for r in prot_rxns:
             #     ub=flux,
             #     name="moma_constraint_" + r.id,
             # )                # 二次约束无法求解
-            rxn_to_add = [dist, const]
-            mutModel.add_cons_vars(rxn_to_add)
+            prot_constr_to_add = [dist, const]
+            mutModel.add_cons_vars(prot_constr_to_add)
             # to_add.extend([dist, const])
             obj_vars.append(dist ** 2)
 
@@ -156,12 +157,34 @@ mutModel.objective = prob.Objective(add(obj_vars), direction="min", sloppy=True)
 
 
 # solve
-test2 = mutModel.optimize()
-test2.fluxes['r_1714_REV']
-test2.fluxes['r_2111']
+fba_solution.fluxes['r_1714_REV']
+fba_solution.fluxes['r_2111']
+gluc=fba_solution.fluxes['r_1714_REV']
+with mutModel:
+    mutModel.reactions.get_by_id("r_1714_REV").bounds = (gluc, gluc)
+    test2 = mutModel.optimize()
+    test2.fluxes['r_1714_REV']
+    test2.fluxes['r_2111']
 
-
-
+# check the protein abndance change fold
+import pandas as pd
+prot_change=pd.Series()
+for r in prot_rxns:
+    if 'draw_prot_' in r.id:
+        flux1 = fba_solution.fluxes[r.id]
+        flux2= test2.fluxes[r.id]
+        if flux1 > 0:
+            fc=flux2/flux1
+            prot_change[r.id]=fc
+        elif flux1 == 0:
+            if flux2 > 0:
+                fc=1000
+            elif flux2 == 0:
+                fc=1
+            prot_change[r.id] = fc
+        print(f"old_{r.id}",flux1,f'mut_{r.id}: ',flux2)
+print('change more than 5 times:',len(prot_change[prot_change>5]))
+print('change less than 0.2 times:',len(prot_change[prot_change<0.2]))
 
 """
 # generate objective function use a new way
