@@ -1,15 +1,16 @@
 import sys
 import os
-os.chdir(r'D:\code\github\etfl\ETFLdesigner')
-# sys.path.append(r"/Users/xluhon/Documents/GitHub/ETFLdesigner/ETFLdesigner")
+#os.chdir(r'D:\code\github\etfl\ETFLdesigner')
+sys.path.append(r"/Users/xluhon/Documents/GitHub/ETFLdesigner/ETFLdesigner")
+
 
 # load packages
 from cobra.io import load_matlab_model, read_sbml_model
 from pytfa.optim.utils import symbol_sum
 from cobra.util.solver import set_objective
 import pandas as pd
-from ETFLdesigner.ETFLdesigner.simulation.ecYeastFlux import *
-from ETFLdesigner.ETFLdesigner.manipulation.mainFunction import *
+from ETFLdesigner.simulation.ecYeastFlux import *
+from ETFLdesigner.manipulation.mainFunction import *
 
 
 
@@ -162,17 +163,17 @@ fba_solution.fluxes['r_2111']
 gluc=fba_solution.fluxes['r_1714_REV']
 with mutModel:
     mutModel.reactions.get_by_id("r_1714_REV").bounds = (gluc, gluc)
-    test2 = mutModel.optimize()
-    test2.fluxes['r_1714_REV']
-    test2.fluxes['r_2111']
+    mutant = mutModel.optimize()
+    mutant.fluxes['r_1714_REV']
+    mutant.fluxes['r_2111']
 
-# check the protein abndance change fold
+# check the protein abundance change fold
 import pandas as pd
 prot_change=pd.Series()
 for r in prot_rxns:
     if 'draw_prot_' in r.id:
         flux1 = fba_solution.fluxes[r.id]
-        flux2= test2.fluxes[r.id]
+        flux2= mutant.fluxes[r.id]
         if flux1 > 0:
             fc=flux2/flux1
             prot_change[r.id]=fc
