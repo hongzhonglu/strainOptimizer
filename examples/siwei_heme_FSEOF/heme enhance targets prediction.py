@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 import copy
 import re
-model = cobra.io.load_matlab_model(r"C:\Users\Administrator\Desktop\Augest\y8.mat")
+#model = cobra.io.load_matlab_model(r"C:\Users\Administrator\Desktop\Augest\y8.mat")
+model = cobra.io.load_matlab_model("examples/siwei_heme_FSEOF/y8.mat")
 
 
 Ysx = 0.122*180/1000
@@ -139,5 +140,32 @@ for k, v in cons_g.items():
 cons_g_f = pd.Series(cons_g_f)
 cons_g_f.sort_values(ascending=False, inplace=True)
 
-cons_g_f.to_excel(r"C:\Users\Administrator\Desktop\heme production enhance targets.xlsx")
+# classification
+# k_score >1, overexpression
+# 0.05 < k_score <= 0.5 down-regulation
+# k_score <= 0.05 deletion
+cons_g_f0 = pd.DataFrame(cons_g_f)
+cons_g_f0.columns = ['k_scores']
+actions = []
+for i, x in cons_g_f0.iterrows():
+    if x['k_scores'] > 1:
+        actions.append('OE')
+    elif x['k_scores'] <= 0.05:
+        actions.append('KO')
+    elif x['k_scores'] <= 0.5 and x['k_scores'] > 0.05:
+        actions.append('KD')
+    else:
+        actions.append('Not_sure')
+
+cons_g_f0['actions'] = actions
+cons_g_f0['gene'] = list(cons_g_f0.index)
+
+#cons_g_f.to_excel(r"C:\Users\Administrator\Desktop\heme production enhance targets.xlsx")
+cons_g_f0.to_excel(r"examples/siwei_heme_FSEOF/heme production enhance targets.xlsx")
+
+
+
+
+
+
 
