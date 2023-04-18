@@ -177,7 +177,7 @@ def find_leaks(candidates, targetID, model,product_name):
         return candidates
 
 
-def remove_essential_targets(candidates,essential_path=r'code_etfl/ETFLdesigner/data/essential_genes.txt'):
+def remove_essential_targets(candidates,essential_path=r'ETFLdesigner/data/essential_genes.txt'):
     '''function to remove essential genes from candidates.
     :param candidates: a pandas dataframe with the following columns:
         1. geneID: gene ID
