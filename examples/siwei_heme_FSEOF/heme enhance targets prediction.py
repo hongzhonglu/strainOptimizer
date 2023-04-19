@@ -55,6 +55,7 @@ def compare_substrate(model, Ysx):
     k_matrix = []
     f_gene = []
     for a in alpha:
+        print(a)
         tmpflux = simulateGrowth(model, a)
         try:
             v_matrix.append(tmpflux.fluxes)
@@ -74,6 +75,7 @@ v_matrix, k_matrix, f_gene, alpha = compare_substrate(model, Ysx)
 
 all_flux = pd.DataFrame(v_matrix)   # 生成dataframe
 all_flux = all_flux.T
+
 
 all_k = pd.DataFrame(k_matrix)      # 生成dataframe
 all_k = all_k.T
@@ -141,7 +143,7 @@ cons_g_f = pd.Series(cons_g_f)
 cons_g_f.sort_values(ascending=False, inplace=True)
 
 # classification
-# k_score >1, overexpression
+# k_score > 1, overexpression
 # 0.05 < k_score <= 0.5 down-regulation
 # k_score <= 0.05 deletion
 cons_g_f0 = pd.DataFrame(cons_g_f)
