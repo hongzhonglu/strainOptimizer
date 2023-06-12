@@ -440,25 +440,38 @@ def getRXNgeneMapping(rxn0, gpr0):
 
 
 
-def getRXNmetaboliteMapping(rxn0, met0):
+def getRXNmetaboliteMapping(model0, rxn0, met0):
     '''this function is used to split the equation of metabolites; used to produce the dataframe format of GEM using
     cobrapy
     input, for example rxn0=['r1','g2']
     gpr0=['a => c','a => b']
     output, each rxn related with each gene'''
-    met_annotation = pd.read_excel('/Users/xluhon/Documents/GitHub/cobrapy/result/met_yeastGEM.xlsx')
+    #met_annotation = pd.read_excel('/Users/xluhon/Documents/GitHub/cobrapy_test/result/met_yeastGEM.xlsx')
+    #model0 = ecYeast
+    id = []
+    name = []
+    compartment = []
+    for m in model0.metabolites:
+        print(m.id, m.name, m.compartment)
+        id.append(m.id)
+        name.append(m.name)
+        compartment.append(m.compartment)
+    df = pd.DataFrame({'m_name':id, 'met':name, 'localization': compartment})
+    df['met0'] = df['met'] + '[' + df['localization'] + ']'
+
     s1 = rxn0
     s2 = met0
     s3 = splitAndCombine(s2,s1,sep0=" ")
     s3['V2'] = s3['V2'].str.strip()
     s3.columns = ['rxnID', 'met']
-    s3['met_name'] = singleMapping(met_annotation['description'],met_annotation['m_name'],s3['met'])
+    s3['met_name'] = singleMapping(df['met0'], df['m_name'],s3['met'])
     for i, x in s3.iterrows():
         if s3['met_name'][i] is None:
             s3['met_name'][i] = s3['met'][i]
         else:
             s3['met_name'][i] = s3['met_name'][i]
     return s3
+
 
 
 
@@ -477,10 +490,6 @@ def correctSomeWrongFormat(model0):
       gene.id = gene.id.replace('__45__', '-')
 
   return model0
-
-
-
-
 
 def produceMetaboliteList(model0):
   #produce the dataframe for the metabolites from yeastGEM
@@ -510,6 +519,7 @@ def produceGeneList(model0):
   return genelist
 
 
+
 def produceRxnList(model0):
   #produce the dataframe for the rxn from yeastGEM
   reaction_list =[None]*len(model0.reactions)
@@ -517,7 +527,9 @@ def produceRxnList(model0):
                               'equation':reaction_list,
                               'GPR':reaction_list,
                               'rxnID':reaction_list,
-                              'formula':reaction_list
+                              'formula':reaction_list,
+                              'lower_bound': reaction_list,
+                              'upper_bound': reaction_list
                               })
 
   for i, reaction in enumerate(model0.reactions):
@@ -526,14 +538,15 @@ def produceRxnList(model0):
       gem_dataframe['equation'][i] = reaction.reaction
       gem_dataframe['GPR'][i] = reaction.gene_reaction_rule
       gem_dataframe['rxnID'][i] = reaction.id
+      gem_dataframe['lower_bound'][i] = reaction.lower_bound
+      gem_dataframe['upper_bound'][i] = reaction.upper_bound
   gem_dataframe['ID'] = ['R'+ str(i) for i in range(0, len(model0.reactions))]
   gem_dataframe['GPR'] = gem_dataframe['GPR'].str.replace('__45__', '-')
   #replace the metabolite name in gem_dataframe
-  s0 = getRXNmetaboliteMapping(gem_dataframe['rxnID'], gem_dataframe['equation'])
+  s0 = getRXNmetaboliteMapping(model0, gem_dataframe['rxnID'], gem_dataframe['equation'])
   gem_dataframe['formula'] = multiMapping(s0['met_name'],s0['rxnID'],gem_dataframe['rxnID'],removeDuplicates=False)
   gem_dataframe['formula'] = gem_dataframe['formula'].str.replace(";", " ")
   return gem_dataframe
-
 
 
 def exchange(s1, subystem):

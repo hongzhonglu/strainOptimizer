@@ -250,7 +250,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
 
     # # 6.- combine candidate targets
     step=step+1
-    tol_tatio=0.01
+    tol_tatio=0.001
     print(str(step) + '.    **** Combine candidate targets ****')
     # # fix substrate uptake rate
     c_source=modelParam['c_source']
@@ -259,7 +259,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     if model_type=='etfl':
         candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin([1.0,2.0])].index.tolist()
     elif model_type=='ecGEM':
-        candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin([1,2])].index.tolist()
+        candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin([1,2,3])].index.tolist()
     print("Finding the minimal set of %s candidates to achieve the max target production yield" %len(candidatesID_list))
     # find minmal sets of targets
     min_set_analysis_result,optimal_prod_result=find_min_sets.find_min_set(model=model,

@@ -131,13 +131,14 @@ def find_leaks(candidates, targetID, model,product_name):
         print('No metabolite found with the given name.\n')
         return candidates
     else:
+        met_eID='None'
         for met in mets:
             if met.compartment=='c':
                 met_c=model.metabolites.get_by_id(met.id)
             elif met.compartment=='e':
                 met_e=model.metabolites.get_by_id(met.id)
-        # met_c_id=met_e_id.replace('e','c')
-        # met_c=model.metabolites.get_by_id(met_c_id)
+                met_eID=met_e.id
+
         with model:
             # set the target exchange reaction as objective
             model.objective = targetID
@@ -153,7 +154,7 @@ def find_leaks(candidates, targetID, model,product_name):
             rxn=model.reactions.get_by_id(rxnID)
             # remove rxn to the product target
             met_idList=[met.id for met in list(rxn.metabolites.keys())]
-            if met_e.id in met_idList:
+            if met_eID in met_idList:
                 consuming_rxnIDs.remove(rxnID)
                 continue
             else:
@@ -176,7 +177,7 @@ def find_leaks(candidates, targetID, model,product_name):
         return candidates
 
 
-def remove_essential_targets(candidates,essential_path=r'code_etfl/ETFLdesigner/data/essential_genes.txt'):
+def remove_essential_targets(candidates,essential_path=r'ETFLdesigner/data/essential_genes.txt'):
     '''function to remove essential genes from candidates.
     :param candidates: a pandas dataframe with the following columns:
         1. geneID: gene ID
