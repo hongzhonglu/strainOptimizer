@@ -7,8 +7,8 @@
 '''
 import pandas as pd
 import numpy as np
-from ETFLdesigner.ETFLdesigner.analysis import optimal_yield
-from ETFLdesigner.ETFLdesigner.manipulation.constraint import enzyme
+from ETFLdesigner.analysis import optimal_yield
+from ETFLdesigner.manipulation.constraint import enzyme
 
 
 def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_fva_result,gene_enz_dict,model_type='etfl',tol_ratio=0.01):

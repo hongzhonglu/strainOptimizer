@@ -4,10 +4,10 @@
 import sys
 sys.path.append(r"D:\code\github\etfl\code_etfl\ETFLdesigner\ecFactory")
 import pandas as pd
-from ETFLdesigner.ETFLdesigner.strain_design.ecFactory import fseof
-from ETFLdesigner.ETFLdesigner.strain_design.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR,pprotFBA_prot_conc
-from ETFLdesigner.ETFLdesigner.analysis.enzyme_variety_analysis import enzymeVA
-from ETFLdesigner.ETFLdesigner.strain_design.ecFactory import find_min_sets
+from ETFLdesigner.strain_design.ecFactory import fseof
+from ETFLdesigner.strain_design.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR,pprotFBA_prot_conc
+from ETFLdesigner.analysis.enzyme_variety_analysis import enzymeVA
+from ETFLdesigner.strain_design.ecFactory import find_min_sets
 
 def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
     '''
@@ -64,6 +64,8 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     gene_result = gene_result.loc[gene_result['actions'].notnull()]
     print(f'ecFSEOF returned {len(gene_result)} targets\n')
     results['geneTable'] = gene_result
+
+    # return results
 
     # 2.- Add flux leak targets (those genes not optimal for production that may consume the product of interest.
     # (probaly extend the approach to inmediate precurssors)

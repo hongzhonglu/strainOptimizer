@@ -4,7 +4,7 @@
 import os
 import numpy as np
 import pandas as pd
-from ETFLdesigner.ETFLdesigner.simulation import pprotFBA
+from ETFLdesigner.simulation import pprotFBA
 
 
 def k_matrix_filter(model, k_matrix, alpha, tol):
@@ -23,16 +23,17 @@ def k_matrix_filter(model, k_matrix, alpha, tol):
     k_matrix[np.abs(k_matrix) > 1000] = 1000
 
     # filter5.Filter out values that are inconsistent at different alphas:
-    always_down = np.sum(k_matrix <= (1 - tol), axis=1) == len(alpha)
-    always_up = np.sum(k_matrix >= (1 + tol), axis=1) == len(alpha)
+    distinct_down = np.sum(k_matrix <= (1 - tol), axis=1) >= len(alpha)-2
+    distinct_up = np.sum(k_matrix >= (1 + tol), axis=1) >=  len(alpha)-2
     # Identify those reactions with mixed patterns
-    incons_rxns = always_down + always_up == 0
+    incons_rxns = distinct_down + distinct_up == 0
+    print('there are %d reactions with mixed patterns' % np.sum(incons_rxns))
     k_matrix = k_matrix.loc[incons_rxns[~incons_rxns].index.tolist(), :]
 
     return k_matrix
 
 
-def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model_type='etfl',tol=1e-6):
+def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model_type='etfl',tol=0.001):
     """
     ecFlux_scanning
     Args:
@@ -81,7 +82,8 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
                                    targetID=gr_rxnID,
                                    c_source=c_source,
                                    c_uptake=c_uptake,
-                                   model_type=model_type)
+                                   model_type=model_type,
+                                   tol_ratio=tol_ratio)
     # max_growth = FC['flux_WT'][gr_rxnID]
     # print('simulate WT-like:',max_growth)
 
@@ -96,7 +98,13 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
         biomass_yield=alpha[i]
         growth=biomass_yield*c_uptake*gluc_MW
         model.reactions.get_by_id(gr_rxnID).bounds= growth*(1-tol_ratio), growth
-        FC['flux_MAX'] = pprotFBA.ppFBA(model=model, targetID=targetID, c_source=c_source,c_uptake= c_uptake, model_type=model_type,tol_ratio=tol_ratio)
+        FC['flux_MAX'] = pprotFBA.ppFBA(model=model,
+                                        targetID=targetID,
+                                        c_source=c_source,
+                                        c_uptake= c_uptake,
+                                        model_type=model_type,
+                                        tol_ratio=tol_ratio)
+        print('when growth rate is %s,production rate is %s'%(biomass_yield*c_uptake*gluc_MW,FC['flux_MAX'][targetID]))
         v_matrix.iloc[:, i] = FC['flux_MAX']
         k_matrix.iloc[:, i] = FC['flux_MAX'] / FC['flux_WT']
 
@@ -136,6 +144,8 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
             if np.sum(related_rxns_k <= (1 - tol)) == len(related_rxns) or np.sum(related_rxns_k >= (1 + tol)) == len(related_rxns):
                 genes_rxns_dict[gene] = related_rxns
                 k_genes[gene] = np.mean(k_matrix_filtered.loc[related_rxns, :].values.flatten())
+            else:
+                print('inconsistent k_scores for gene %s'%gene)
     # Order from highest to lowest median k_score (across alphas)
     order = np.argsort(k_genes)[::-1]
     k_genes = k_genes[order]
