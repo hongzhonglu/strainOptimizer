@@ -2,7 +2,7 @@
 # date : 2023/2/26 
 # author : wangh
 import sys
-sys.path.append(r"D:\code\github\etfl\code_etfl\ETFLdesigner\ecFactory")
+# sys.path.append(r"D:\code\github\etfl\code_etfl\ETFLdesigner\ecFactory")
 import pandas as pd
 from ETFLdesigner.strain_design.ecFactory import fseof
 from ETFLdesigner.strain_design.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR,pprotFBA_prot_conc

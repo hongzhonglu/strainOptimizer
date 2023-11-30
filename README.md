@@ -17,8 +17,31 @@ Repo for strain design based on ETFL models.
 For documentation and API please check: 
 
 # Installation
+1. Clone the repo
 
-pip install xxxx
+```
+git clone https://github.com/hongzhonglu/ETFLdesigner.git
+```
+
+2. Dependencies installation from Pypi
+
+```
+conda create -n env_name python=3.10
+pip install -r requirements.txt
+```
+
+3. Solvers
+- GUROBI
+After installing GUROBI into the system, set the GUROBI Python API in your environment :
+```
+python [your_gurobi_path]/win64/setup.py install
+```
+
+- CPLEX
+After installing CPLEX into the system, set the CPLEX Python API in your environment :
+```
+python [cplex_path]/python/setup.py install
+```
 
 # Contribution
 

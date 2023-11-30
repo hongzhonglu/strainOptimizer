@@ -166,14 +166,17 @@ def find_leaks(candidates, targetID, model,product_name):
                 geneIDlist=[geneID for geneID in geneIDlist if geneID not in candidates.index.tolist()]
 
                 target_genes=target_genes+geneIDlist
-
+        if len(target_genes)==0:
+            print('No leak rxn has been found.\n')
+            return candidates
         df_new=pd.DataFrame({'geneID':target_genes,'k_score':np.nan,'actions':np.nan})
         df_new.set_index('geneID',inplace=True)
         df_new['k_score']=[0]*len(target_genes)
         df_new['actions']=['KO']*len(target_genes)
         print('%s leak rxn has been found and added to candidates.\n'%len(target_genes))
         # add to candidates
-        candidates=candidates.append(df_new)
+        # candidates=candidates.append(df_new)
+        candidates=pd.concat([candidates,df_new])
 
         return candidates
 

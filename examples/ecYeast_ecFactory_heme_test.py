@@ -9,7 +9,7 @@ from ETFLdesigner.io.ecModel import load_ecmodel
 from ETFLdesigner.strain_design.ecFactory import run_ecFactory
 
 # load heme a product model
-heme_ecYeast=load_ecmodel('models/heme_ecYeastGEM.xml')
+heme_ecYeast=load_ecmodel('examples/models/yeast/heme_ecYeastGEM.xml')
 product_name='heme a'
 product_id='EX_heme_a'
 model=heme_ecYeast

@@ -1,9 +1,9 @@
 # newly added
 import sys
 import os
-sys.path.append('/Users/xluhon/Documents/GitHub/yetfl/code')
-sys.path.append('/Users/xluhon/Documents/GitHub/etfl')
-os.chdir('/Users/xluhon/Documents/GitHub/yetfl/code')
+# sys.path.append('/Users/xluhon/Documents/GitHub/yetfl/code')
+# sys.path.append('/Users/xluhon/Documents/GitHub/etfl')
+# os.chdir('/Users/xluhon/Documents/GitHub/yetfl/code')
 
 
 
@@ -16,10 +16,14 @@ import numpy  as np
 from etfl.io.json import load_json_model
 
 solver = 'optlang-gurobi'
+solver= 'optlang-cplex'
+
 
 # ec_cobra.reactions.ATPM.lower_bound = 0
 growth_reaction_id = 'r_4041'
-yeast = load_json_model('../models/yeast8_cEFL_2584_enz_128_bins__20221031_130538.json', solver=solver)
+yeast = load_json_model('examples/models/yeast/yeast8_cEFL_2584_enz_128_bins__20221031_130538.json', solver=solver)
+# change solver
+yeast.solver = solver
 yeast.reactions.r_1714.lower_bound = -10
 yeast.reactions.r_1714.upper_bound = 0
 yeast.objective = growth_reaction_id

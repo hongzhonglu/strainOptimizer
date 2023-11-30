@@ -13,11 +13,14 @@ def k_matrix_filter(model, k_matrix, alpha, tol):
     k_matrix = k_matrix.loc[withGR,:]
 
     # filter2.remove out rxns that are always zero -> k=0/0=NaN:
-    all_nanList = [rxn for rxn in k_matrix.index if np.all(np.isnan(k_matrix.loc[rxn, :]))]
-    k_matrix = k_matrix.drop(all_nanList, axis=0)
+    # all_nanList = [rxn for rxn in k_matrix.index if np.all(np.isnan(k_matrix.loc[rxn, :]))]
+    all_nanList = k_matrix.apply(lambda x: np.all(pd.to_numeric(x, errors='coerce').isna()), axis=1)
+    print('there are %d reactions with all NaNs' % np.sum(all_nanList))
+    k_matrix = k_matrix.loc[~all_nanList]
 
     # 3.Replace remaining NaNs with 1s:
-    k_matrix[np.isnan(k_matrix)] = 1
+    # k_matrix[np.isnan(k_matrix)] = 1
+    k_matrix = k_matrix.fillna(1)
 
     # 4.Replace any Inf value with 1000:
     k_matrix[np.abs(k_matrix) > 1000] = 1000
@@ -104,7 +107,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
                                         c_uptake= c_uptake,
                                         model_type=model_type,
                                         tol_ratio=tol_ratio)
-        print('when growth rate is %s,production rate is %s'%(biomass_yield*c_uptake*gluc_MW,FC['flux_MAX'][targetID]))
+        print('when growth rate is %s,production rate is %s'%(growth,FC['flux_MAX'][targetID]))
         v_matrix.iloc[:, i] = FC['flux_MAX']
         k_matrix.iloc[:, i] = FC['flux_MAX'] / FC['flux_WT']
 
