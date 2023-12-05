@@ -6,11 +6,11 @@
 # load packages
 import pandas as pd
 import numpy as np
-from ETFLdesigner.ETFLdesigner.io.ETFL import load_etfl_model
-from ETFLdesigner.ETFLdesigner.strain_design.ecFactory import run_ecFactory
+from ETFLdesigner.io.ETFL import load_etfl_model
+from ETFLdesigner.strain_design.ecFactory import run_ecFactory
 
 # load model
-yefl=load_etfl_model('models/yeast8_cEFL_2584_enz_128_bins__20221228_090737.json', solver='optlang-gurobi')
+yefl=load_etfl_model('examples/models/yeast/yeast8_cEFL_2584_enz_128_bins__20221031_130538.json', solver='optlang-gurobi')
 model=yefl
 
 # parameters for yefl siumlation

@@ -6,11 +6,11 @@
 # load packages
 import pandas as pd
 import numpy as np
-from ETFLdesigner.ETFLdesigner.io.ecModel import load_ecmodel
-from ETFLdesigner.ETFLdesigner.strain_design.ecFactory import run_ecFactory
+from ETFLdesigner.io.ecModel import load_ecmodel
+from ETFLdesigner.strain_design.ecFactory import run_ecFactory
 
 # load 2-PE model
-ecYeast=load_ecmodel('code_etfl/ETFLdesigner/models/ecYeastGEM_batch.xml')
+ecYeast=load_ecmodel('examples/models/yeast/ecYeastGEM_batch.xml')
 model=ecYeast
 product_name='2-phenylethanol'
 product_id='r_1589'    # 2-PE exchange rxn

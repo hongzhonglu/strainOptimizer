@@ -5,11 +5,11 @@
 # project : etfl
 import pandas as pd
 import numpy as np
-from ETFLdesigner.ETFLdesigner.io.ecModel import load_ecmodel
-from ETFLdesigner.ETFLdesigner.strain_design.ecFactory import run_ecFactory
+from ETFLdesigner.io.ecModel import load_ecmodel
+from ETFLdesigner.strain_design.ecFactory import run_ecFactory
 
 # load heme a product model
-heme_ecYeast=load_ecmodel('models/heme_ecYeastGEM.xml')
+heme_ecYeast=load_ecmodel('examples/models/yeast/heme_ecYeastGEM.xml')
 product_name='heme a'
 product_id='EX_heme_a'
 model=heme_ecYeast
@@ -26,7 +26,7 @@ c_uptake=1
 model.reactions.get_by_id('r_1714_REV').bounds=1,1
 gluc_MW=0.180156  # g/mmol
 max_yield=model.slim_optimize()/(c_uptake*gluc_MW) # gDW / gGluc
-expYield=max_yield*0.49
+expYield=0.122
 alphaLims=(0.5*expYield,2*expYield)
 
 # prepare parameters for ecFactory algorithm
@@ -35,7 +35,7 @@ modelParam['targetID']=product_id
 modelParam['c_source']=c_source
 modelParam['c_uptake']=c_uptake
 modelParam['productName']=product_name
-action_thresholds=[0.05,0.65,1.05]     # rules for overexpression, knockout and knockdown
+action_thresholds=[0.05,0.3,1.05]     # rules for overexpression, knockout and knockdown
 
 # set a timer
 import time
@@ -115,6 +115,10 @@ with pd.ExcelWriter(f'code_etfl/ETFLdesigner/output/ecYeast_{product_name}_gluc_
         results[key].to_excel(writer, sheet_name=key)
 
 
-# compare ecFactory with experimental data
-l1_common_exp=set(ecfactory_candidates_l1).intersection(set(exp_list))
-l3_common_exp=set(ecfactory_candidates_l3).intersection(set(exp_list))
+# save geneTable
+genetable=results['geneTable']
+genetable.to_excel(f'ETFLdesigner/examples/siwei_heme_FSEOF/why_heme_geneTable.xlsx')
+results['v_matrix'].to_excel(f'ETFLdesigner/examples/siwei_heme_FSEOF/why_heme_v_matrix.xlsx')
+results['k_matrix'].to_excel(f'ETFLdesigner/examples/siwei_heme_FSEOF/why_heme_k_matrix.xlsx')
+
+

@@ -3,8 +3,9 @@
 # author : wangh
 import numpy as np
 import pandas as pd
+import os
 from etfl.io.json import load_json_model
-from ETFLdesigner.ETFLdesigner.simulation import pprotFBA
+from ETFLdesigner.simulation import pprotFBA
 
 
 def compare_EUVR(gene_enz_fva_result):
@@ -165,19 +166,22 @@ def find_leaks(candidates, targetID, model,product_name):
                 geneIDlist=[geneID for geneID in geneIDlist if geneID not in candidates.index.tolist()]
 
                 target_genes=target_genes+geneIDlist
-
+        if len(target_genes)==0:
+            print('No leak rxn has been found.\n')
+            return candidates
         df_new=pd.DataFrame({'geneID':target_genes,'k_score':np.nan,'actions':np.nan})
         df_new.set_index('geneID',inplace=True)
         df_new['k_score']=[0]*len(target_genes)
         df_new['actions']=['KO']*len(target_genes)
         print('%s leak rxn has been found and added to candidates.\n'%len(target_genes))
         # add to candidates
-        candidates=candidates.append(df_new)
+        # candidates=candidates.append(df_new)
+        candidates=pd.concat([candidates,df_new])
 
         return candidates
 
 
-def remove_essential_targets(candidates,essential_path=r'ETFLdesigner/data/essential_genes.txt'):
+def remove_essential_targets(candidates,essential_data=r'essential_genes.txt'):
     '''function to remove essential genes from candidates.
     :param candidates: a pandas dataframe with the following columns:
         1. geneID: gene ID
@@ -186,11 +190,19 @@ def remove_essential_targets(candidates,essential_path=r'ETFLdesigner/data/essen
     :param essential_path: path to essential genes data(default:path for S.cerevisiae essential genes table)
     :return: a updated candidates dataframe
     '''
+    # get essential genes data path
+    # get the current directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # set the relative path to the essential genes data
+    essential_path = os.path.join(current_dir,'../../../data', essential_data)
+
     # remove essential genes
     essentials = pd.read_csv(essential_path, sep='\t').Ids.str.strip()
-    essential_targets = candidates.loc[candidates.index.isin(essentials)].index.tolist()
-    print(f"Removing {len(essential_targets)} essential targets\n")
-    candidates = candidates.drop(essential_targets)
+    ko_targets= candidates.loc[candidates.actions == 'KO'].index.tolist()
+    # remove essential genes from ko targets
+    to_remove = set(ko_targets).intersection(set(essentials))
+    print(f"Removing {len(to_remove)} essential targets\n")
+    candidates = candidates.drop(to_remove)
     return candidates
 
 

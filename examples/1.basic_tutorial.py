@@ -17,7 +17,7 @@ e)  For testing or cognition, please use the ecoli core model in “/home/yeast/
 
 # load and save model
 from etfl.io.json import save_json_model, load_json_model
-load_json_model(path, solver=solver)
+model=load_json_model('examples/models/yeast/yeast8_cEFL_2584_enz_128_bins__20221031_130538.json',solver='optlang-gurobi')
 save_json_model(path)
 
 # 调用蛋白质，核苷酸等比例
