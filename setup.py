@@ -13,7 +13,7 @@ test_requirements = requirements + ['pytest', 'cplex']
 install_requirements = requirements
 
 setup(
-    name='ETFLdesigner',
+    name='strainOptimizer',
     version='0.0.0',
     python_requires='>=3.8',
     packages=find_packages(),
@@ -24,7 +24,7 @@ setup(
     tests_require=test_requirements,
     author='Haoyu Wang, Hongzhong Lu',
     author_email='wanghy@dicp.ac.cn',
-    description='ETFLdesigner - Strain design algorithm for ETFL models',
+    description='strainOptimizer - Strain design platform for ETFL/ecGEM models',
     license='Apache License Version 2.0',
     keywords='strain design, ME-model',
     url='https://github.com/hongzhonglu/ETFLdesigner',
