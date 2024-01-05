@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" host="sydata.hpc.sjtu.edu.cn" id="f396df0e-d78e-4d1a-ab7e-ee9829ffa210" port="22" nameFormat="DESCRIPTIVE" username="clslhz" useOpenSSHConfig="true" />
+      <sshConfig authType="PASSWORD" host="sylogin1.hpc.sjtu.edu.cn" id="cb6742ff-48a6-4d91-8ef2-6c793d4e820e" port="22" nameFormat="DESCRIPTIVE" username="clslhz" useOpenSSHConfig="true" />
+    </configs>
+  </component>
+</project>
