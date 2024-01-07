@@ -1,10 +1,10 @@
-numpy
 cobra
-reframed
-inspyred
-jmetalpy
-networkx
+pytfa
 matplotlib
 tqdm
-joblib
-
+biopython
+openpyxl
+pandas
+optlang
+xlrd
+numpy
