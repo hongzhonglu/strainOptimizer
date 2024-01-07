@@ -1,4 +1,4 @@
-# ETFLdesigner
+# strainOptimizer
 
 Repo for strain design based on ETFL models.
 
@@ -20,7 +20,7 @@ For documentation and API please check:
 1. Clone the repo
 
 ```
-git clone https://github.com/hongzhonglu/ETFLdesigner.git
+git clone https://github.com/hongzhonglu/strainOptimizer.git
 ```
 
 2. Dependencies installation from Pypi
@@ -45,6 +45,6 @@ python [cplex_path]/python/setup.py install
 
 # Contribution
 
-* For contributors: Fork it to your Github account, and create a new branch from [`dev`](https://github.com/hongzhonglu/ETFLdesigner/tree/dev).
+* For contributors: Fork it to your Github account, and create a new branch from [`dev`](https://github.com/hongzhonglu/strainOptimizer/tree/dev).
 
 
