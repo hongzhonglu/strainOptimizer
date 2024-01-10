@@ -7,15 +7,15 @@ import os
 os.chdir(r"D:\code\github\etfl")
 # package path
 import sys
-sys.path.append(r"D:\code\github\etfl\code_etfl\ETFLdesigner")
+sys.path.append(r"D:\code\github\etfl\code_etfl\strainOptimizer")
 
 # load packages
 import pandas as pd
-from etfl.io.json import load_json_model
-from ETFLdesigner.strain_design.ecFactory import run_ecFactory
+from strainOptimizer.io import load_model
+from strainOptimizer.strainDesign.ecFactory import run_ecFactory
 
 # load model
-test_model=load_json_model('models/ecoli_core.json', solver='optlang-gurobi')
+test_model=load_model('models/ecoli_core.json', solver='optlang-gurobi',model_type='etfl')
 
 # parameters for succinate production design in ecoli core model
 targetID="EX_succ_e"

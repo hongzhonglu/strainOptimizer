@@ -1,24 +1,26 @@
 # -*- coding: utf-8 -*-
-# date : 2023/4/6 
-# author : wangh
-# file : yefl_ecFactory_2PE_test.py
-# project : etfl
+
 # load packages
 import pandas as pd
 import numpy as np
-from ETFLdesigner.io.ETFL import load_etfl_model
-from ETFLdesigner.strain_design.ecFactory import run_ecFactory
+from strainOptimizer.io import load_etfl_model
+from strainOptimizer.strainDesign.ecFactory import run_ecFactory
+from strainOptimizer.manipulation.constraint.total_resource_allocation import constrain_enzymes
 
 # load model
-yefl=load_etfl_model('examples/models/yeast/yeast8_cEFL_2584_enz_128_bins__20221031_130538.json', solver='optlang-gurobi')
+yefl=load_etfl_model('examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json', solver='optlang-gurobi')
 model=yefl
+
+# set total amount of enzymes
+total_enzymes=0.1 # g/gDW
+constrain_enzymes(model,total_enzymes,model_type='etfl')
 
 # parameters for yefl siumlation
 product_name='2-phenylethanol'
 product_id='r_1589'    # 2-PE exchange rxn
 c_source="r_1714"      # glucose exchange rxn
 growth_id=model.growth_reaction.id     # biomass rxn
-c_uptake=1
+c_uptake=5
 gluc_MW=0.180156  # g/mmol
 model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
 model.objective=model.growth_reaction.id
@@ -52,6 +54,6 @@ for key in results.keys():
     # 检查是否为dict
     if isinstance(results[key],dict):
         results[key]=pd.Series(results[key])
-with pd.ExcelWriter(f'code_etfl/ETFLdesigner/output/yefl_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
+with pd.ExcelWriter(f'examples/result/yefl_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
     for key in results.keys():
         results[key].to_excel(writer, sheet_name=key)

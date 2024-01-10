@@ -5,8 +5,8 @@
 # project : etfl
 import pandas as pd
 import numpy as np
-from ETFLdesigner.ETFLdesigner.io.ETFL import load_etfl_model
-from ETFLdesigner.ETFLdesigner.strain_design.ecFactory import run_ecFactory
+from strainOptimizer.io import load_etfl_model
+from strainOptimizer.strainDesign.ecFactory import run_ecFactory
 
 # load model
 heme_yefl=load_etfl_model('models/heme_cEFL.json', solver='optlang-gurobi')
@@ -89,7 +89,7 @@ print('euva vs l1:',len(euva_common_l1))
 # compare with experimental result
 print('--------------------------compare predicted candidates with experimental data')
 # load heme experimental data
-heme_exp=pd.read_excel('ETFLdesigner/data/heme_experimental_data.xlsx',index_col=0)
+heme_exp=pd.read_excel('strainOptimizer/data/heme_experimental_data.xlsx',index_col=0)
 exp_list=heme_exp.index.tolist()
 common_exp=set(min_set_list).intersection(set(exp_list))
 all_common_exp=set(fseof_list).intersection(set(exp_list))
@@ -107,7 +107,7 @@ for key in results.keys():
     # 检查是否为dict
     if isinstance(results[key],dict):
         results[key]=pd.Series(results[key])
-with pd.ExcelWriter(f'code_etfl/ETFLdesigner/output/ecYeast_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
+with pd.ExcelWriter(f'code_etfl/strainOptimizer/output/ecYeast_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
     for key in results.keys():
         results[key].to_excel(writer, sheet_name=key)
 
@@ -124,7 +124,7 @@ for key in results.keys():
     # 检查是否为dict
     if isinstance(results[key],dict):
         results[key]=pd.Series(results[key])
-with pd.ExcelWriter(f'code_etfl/ETFLdesigner/output/yefl_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
+with pd.ExcelWriter(f'code_etfl/strainOptimizer/output/yefl_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
     for key in results.keys():
         results[key].to_excel(writer, sheet_name=key)
 

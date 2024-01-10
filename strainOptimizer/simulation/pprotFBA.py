@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
-
-
 import os
 import numpy as np
 import pandas as pd
 from pytfa.optim.utils import symbol_sum
 from cobra.util.solver import set_objective
 from etfl.optim.utils import safe_optim
-
 
 def ppFBA(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
     """
@@ -137,3 +134,24 @@ def ecGEM_ppFBA_prot_conc(model, targetID,c_source,c_uptake=1,tol_ratio=0.01):
 
     return all_prot_conc
 
+
+def pprotFBA_prot_conc(model, targetID,enzymeIDlist,c_source,c_uptake=1,model_type='etfl'):
+    '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
+    para:
+        model: must be ETFL model
+        target: the target reaction ID
+        enzID_list: a list of enzyme ID
+        c_source: the carbon source ID
+        c_uptake: the carbon source uptake rate(default=1 mmol/gDW/h)
+        tol: the tolerance of the model
+    return:
+        a pandas series of protein concentration
+        '''
+    if model_type=='etfl':
+        all_enz_concentration = etfl_ppFBA_prot_conc(model=model, targetID=targetID,c_source=c_source,c_uptake=c_uptake)
+    elif model_type=='ecGEM':
+        all_enz_concentration = ecGEM_ppFBA_prot_conc(model=model, targetID=targetID,c_source=c_source,c_uptake=c_uptake)
+
+    enzs_concentration=all_enz_concentration[enzymeIDlist]
+
+    return enzs_concentration
