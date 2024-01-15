@@ -135,12 +135,12 @@ def ecGEM_ppFBA_prot_conc(model, targetID,c_source,c_uptake=1,tol_ratio=0.01):
     return all_prot_conc
 
 
-def pprotFBA_prot_conc(model, targetID,enzymeIDlist,c_source,c_uptake=1,model_type='etfl'):
+def pprotFBA_prot_conc(model, targetID,c_source,enzymeIDlist=None,c_uptake=1,model_type='etfl'):
     '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
     para:
         model: must be ETFL model
         target: the target reaction ID
-        enzID_list: a list of enzyme ID
+        enzID_list: a list of enzyme ID. If None, all enzymes will be included
         c_source: the carbon source ID
         c_uptake: the carbon source uptake rate(default=1 mmol/gDW/h)
         tol: the tolerance of the model
@@ -152,6 +152,9 @@ def pprotFBA_prot_conc(model, targetID,enzymeIDlist,c_source,c_uptake=1,model_ty
     elif model_type=='ecGEM':
         all_enz_concentration = ecGEM_ppFBA_prot_conc(model=model, targetID=targetID,c_source=c_source,c_uptake=c_uptake)
 
-    enzs_concentration=all_enz_concentration[enzymeIDlist]
+    if enzymeIDlist is None:
+        enzs_concentration=all_enz_concentration
+    else:
+        enzs_concentration=all_enz_concentration[enzymeIDlist]
 
     return enzs_concentration

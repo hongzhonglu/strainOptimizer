@@ -3,9 +3,11 @@ import sys
 # sys.path.append(r"D:\code\github\etfl\code_etfl\strainOptimizer\ecFactory")
 import pandas as pd
 from strainOptimizer.strainDesign.ecFactory import fseof
-from strainOptimizer.strainDesign.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR,pprotFBA_prot_conc
+from strainOptimizer.strainDesign.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR
 from strainOptimizer.analysis.enzyme_variety_analysis import enzymeVA
 from strainOptimizer.strainDesign.ecFactory import find_min_sets
+from strainOptimizer.manipulation.constraint.total_resource_allocation import constrain_enzymes
+from strainOptimizer.simulation.pprotFBA import pprotFBA_prot_conc
 
 def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
     '''
@@ -118,12 +120,21 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     print(' Fix suboptimal experimental biomass = ' + str(fix_gr) + ' h-1')
 
     # calculate the protein abundance by parsimonious ptoteins FBA for optimal production condition
-    prod_minprotFBA_protconc = pprotFBA_prot_conc(model=model,
+    prod_ppFBA_allprotconc = pprotFBA_prot_conc(model=model,
                                                   targetID=targetID,
-                                                  enzymeIDlist=target_enz_list,
                                                     c_source=c_source,
                                                   c_uptake=c_uptake,
                                                   model_type=model_type)
+
+    prod_ppFBA_protconc=prod_ppFBA_allprotconc[target_enz_list]
+
+    # fix total enzymes amount for ETFL model
+    if model_type=='etfl':
+        optm_fraction=1.05
+        # calculate the total enzymes amount(exclude dummy enzyme)
+        total_enzymes=prod_ppFBA_allprotconc.drop('dummy_enzyme',axis=0).sum()*optm_fraction
+        print('  - Fix total enzymes amount to %s g/gDW'%total_enzymes)
+        model=constrain_enzymes(model,total_enzymes,model_type=model_type)
 
     # calculate the max and min abundance of each candidate enzymes by enzyme usage variety analysis
     prod_enz_fva_result=enzymeVA(model=model,
@@ -135,7 +146,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
                                  obj_direction='max',
                                  model_type=model_type)
 
-    prod_enz_fva_result['minprotFBA']=prod_minprotFBA_protconc
+    prod_enz_fva_result['minprotFBA']=prod_ppFBA_protconc
     results['prod_enz_fva_result']=prod_enz_fva_result
 
     # release biomass and production constraints
