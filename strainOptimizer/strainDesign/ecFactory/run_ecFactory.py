@@ -61,7 +61,8 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     gene_result.loc[gene_result['k_score'] <= action_thresholds[1], 'actions'] = 'KD'
     gene_result.loc[gene_result['k_score'] <= action_thresholds[0], 'actions'] = 'KO'
     # remove genes with no action
-    gene_result = gene_result.loc[gene_result['actions'].notnull()]
+    # gene_result = gene_result.loc[gene_result['actions'].notnull()]
+    gene_result = gene_result.loc[gene_result['actions'].isin(['OE','KD','KO'])]
     print(f'ecFSEOF returned {len(gene_result)} targets\n')
     results['geneTable'] = gene_result
 
@@ -130,7 +131,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
 
     # fix total enzymes amount for ETFL model
     if model_type=='etfl':
-        optm_fraction=1.05
+        optm_fraction=1.01
         # calculate the total enzymes amount(exclude dummy enzyme)
         total_enzymes=prod_ppFBA_allprotconc.drop('dummy_enzyme',axis=0).sum()*optm_fraction
         print('  - Fix total enzymes amount to %s g/gDW'%total_enzymes)
