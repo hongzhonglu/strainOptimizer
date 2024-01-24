@@ -5,11 +5,11 @@
 # project : etfl
 import pandas as pd
 import numpy as np
-from strainOptimizer.io import load_etfl_model
+from strainOptimizer.io import load_model
 from strainOptimizer.strainDesign.ecFactory import run_ecFactory
 
 # load model
-heme_yefl=load_etfl_model('models/heme_cEFL.json', solver='optlang-gurobi')
+heme_yefl=load_model('examples/models/yeast/heme_cEFL.json', solver='optlang-gurobi',model_type='etfl')
 model=heme_yefl
 
 
@@ -18,7 +18,7 @@ product_name='heme a'
 product_id='EX_heme_a'
 c_source="r_1714"      # glucose exchange rxn
 growth_id=model.growth_reaction.id     # biomass rxn
-c_uptake=3
+c_uptake=5
 gluc_MW=0.180156  # g/mmol
 model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
 model.objective=model.growth_reaction.id
@@ -68,8 +68,8 @@ euva_list=results['geneTable'][results['geneTable']['target_priority_leval'].isi
 
 # compare result with ecFactory
 # load ecFactory predicted result
-ecfactory_candidates_l3=pd.read_csv('code_etfl/reference/ecFactory/results/heme_targets/candidates_L3.txt',sep='\t',index_col=0).index.tolist()
-ecfactory_candidates_l1=pd.read_csv('code_etfl/reference/ecFactory/results/heme_targets/candidates_L1.txt',sep='\t',index_col=0).index.tolist()
+ecfactory_candidates_l3=pd.read_csv('reference/ecFactory-main/tutorials/results/heme_targets/candidates_L3.txt',sep='\t',index_col=0).index.tolist()
+ecfactory_candidates_l1=pd.read_csv('reference/ecFactory-main/tutorials/results/heme_targets/candidates_L1.txt',sep='\t',index_col=0).index.tolist()
 
 common_l3=set(min_set_list).intersection(set(ecfactory_candidates_l3))
 comon_l1=set(min_set_list).intersection(set(ecfactory_candidates_l1))

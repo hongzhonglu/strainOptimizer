@@ -21,8 +21,8 @@ product_name='2-phenylethanol'
 product_id='r_1589'    # 2-PE exchange rxn
 
 # set total amount of enzymes
-total_enzymes=0.1 # g/gDW
-constrain_enzymes(model,total_enzymes,model_type='ecGEM')
+# total_enzymes=0.1 # g/gDW
+# constrain_enzymes(model,total_enzymes,model_type='ecGEM')
 
 # calculate the max biomass yield
 
@@ -30,7 +30,7 @@ constrain_enzymes(model,total_enzymes,model_type='ecGEM')
 c_source="r_1714_REV"      # glucose exchange rxn
 growth_id='r_2111'
 model.objective=growth_id# biomass rxn
-c_uptake=10
+c_uptake=1
 model.reactions.get_by_id('r_1714_REV').bounds=c_uptake,c_uptake
 gluc_MW=0.180156  # g/mmol
 max_yield=model.slim_optimize()/(c_uptake*gluc_MW) # gDW / gGluc

@@ -77,8 +77,8 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
             wt_lb=gene_enz_fva_result.loc[gene,'wt_minprot']
             wt_ub=gene_enz_fva_result.loc[gene,'wt_max']
             if wt_lb>wt_ub:
-                wt_ub=wt_ub
-                wt_lb=wt_lb
+                wt_ub=wt_ub*(1+tol_ratio)
+                wt_lb=wt_lb*(1-tol_ratio)
             mutant_model.reactions.get_by_id(enzID).bounds=wt_lb,wt_ub
         # calculate mod_prod_yield and mod_production_rate
         mod_prod_yield, mod_prod_rate=optimal_yield.cal_max_yield(mutant_model,
@@ -90,7 +90,7 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
         score2=mod_prod_rate/opt_prod_rate
         score=np.mean([score1,score2])
         #round to four decimal
-        score=round(score,5)
+        score=round(score,4)
         df_min_set_result.loc[gene,'mod_prod_yield']=mod_prod_yield
         df_min_set_result.loc[gene,'mod_prod_rate']=mod_prod_rate
         df_min_set_result.loc[gene,'score']=score

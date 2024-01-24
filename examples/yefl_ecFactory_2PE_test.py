@@ -11,9 +11,9 @@ from strainOptimizer.manipulation.constraint.total_resource_allocation import co
 yefl=load_etfl_model('examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json', solver='optlang-gurobi')
 model=yefl
 
-# set total amount of enzymes
-total_enzymes=0.1 # g/gDW
-constrain_enzymes(model,total_enzymes,model_type='etfl')
+# # set total amount of enzymes
+# total_enzymes=0.1 # g/gDW
+# constrain_enzymes(model,total_enzymes,model_type='etfl')
 
 # parameters for yefl siumlation
 product_name='2-phenylethanol'
@@ -45,6 +45,19 @@ results=run_ecFactory.run_ecFactory_design(model=model, modelParam=modelParam, e
 end_time = time.time()
 print('end time:',end_time)
 print('time cost:',end_time-start_time)
+
+# print FSEOF results
+print('FSEOF results:')
+genetable=results['geneTable']
+print('OE:',genetable[genetable['actions']=='OE'].shape[0])
+print('KD:',genetable[genetable['actions']=='KD'].shape[0])
+print('KO:',genetable[genetable['actions']=='KO'].shape[0])
+
+# EUVA results
+print('EUVA results:')
+print('leval 1 candidates:',genetable[genetable['target_priority_leval']==1].shape[0])
+print('leval 2 candidates:',genetable[genetable['target_priority_leval']==2].shape[0])
+print('leval 3 candidates:',genetable[genetable['target_priority_leval']==3].shape[0])
 
 
 # save results into excel file

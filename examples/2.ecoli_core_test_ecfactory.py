@@ -3,11 +3,11 @@
 # author : wangh
 
 # set workdir
-import os
-os.chdir(r"D:\code\github\etfl")
-# package path
-import sys
-sys.path.append(r"D:\code\github\etfl\code_etfl\strainOptimizer")
+# import os
+# os.chdir(r"D:\code\github\etfl")
+# # package path
+# import sys
+# sys.path.append(r"D:\code\github\etfl\code_etfl\strainOptimizer")
 
 # load packages
 import pandas as pd
@@ -15,7 +15,7 @@ from strainOptimizer.io import load_model
 from strainOptimizer.strainDesign.ecFactory import run_ecFactory
 
 # load model
-test_model=load_model('models/ecoli_core.json', solver='optlang-gurobi',model_type='etfl')
+test_model=load_model('examples/models/ecoli/ecoli_core_curated.json', solver='optlang-gurobi',model_type='etfl')
 
 # parameters for succinate production design in ecoli core model
 targetID="EX_succ_e"
