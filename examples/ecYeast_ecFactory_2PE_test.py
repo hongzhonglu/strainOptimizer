@@ -68,11 +68,21 @@ print('leval 1 candidates:',genetable[genetable['target_priority_leval']==1].sha
 print('leval 2 candidates:',genetable[genetable['target_priority_leval']==2].shape[0])
 print('leval 3 candidates:',genetable[genetable['target_priority_leval']==3].shape[0])
 
-
-
 # minimal combined set
 min_result=results['min_set_analysis_result']
 min_set_list=min_result[min_result['score']<0.999].index.tolist()
+
+
+# load experiment data
+from strainOptimizer.analysis.dataset import load_experiment_targets
+# load experiment data
+exp_data=load_experiment_targets(product_name)
+# group the experiment data by action type, and build the dict for index
+exp_group=exp_data.groupby('action')
+exp_dict={}
+for action,group in exp_group:
+    exp_dict[action]=group.index.tolist()
+
 
 fseof_list=results['geneTable'].index.tolist()
 euva_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin([1,2,3])].index.tolist()
@@ -106,4 +116,5 @@ for key in results.keys():
 with pd.ExcelWriter(f'examples/result/ecYeast_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
     for key in results.keys():
         results[key].to_excel(writer, sheet_name=key)
+
 
