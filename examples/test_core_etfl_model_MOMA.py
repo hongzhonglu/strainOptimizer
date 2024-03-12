@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append('/Users/xluhon/Documents/GitHub/yetfl/code')
 sys.path.append('/Users/xluhon/Documents/GitHub/etfl')
-os.chdir('/Users/xluhon/Documents/GitHub/ETFLdesigner')
+os.chdir('/Users/xluhon/Documents/GitHub/strainOptimizer')
 
 
 from etfl.io.json import load_json_model, save_json_model

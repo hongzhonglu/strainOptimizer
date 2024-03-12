@@ -27,7 +27,7 @@ setup(
     description='strainOptimizer - Strain design platform for ETFL/ecGEM models',
     license='Apache License Version 2.0',
     keywords='strain design, ME-model',
-    url='https://github.com/hongzhonglu/ETFLdesigner',
+    url='https://github.com/hongzhonglu/strainOptimizer',
     long_description=readme,
     test_suite='tests',
 )

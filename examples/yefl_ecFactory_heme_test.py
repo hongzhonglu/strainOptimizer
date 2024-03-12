@@ -5,11 +5,11 @@
 # project : etfl
 import pandas as pd
 import numpy as np
-from ETFLdesigner.ETFLdesigner.io.ETFL import load_etfl_model
-from ETFLdesigner.ETFLdesigner.strain_design.ecFactory import run_ecFactory
+from strainOptimizer.io import load_model
+from strainOptimizer.strainDesign.ecFactory import run_ecFactory
 
 # load model
-heme_yefl=load_etfl_model('models/heme_cEFL.json', solver='optlang-gurobi')
+heme_yefl=load_model('examples/models/yeast/heme_cEFL.json', solver='optlang-gurobi',model_type='etfl')
 model=heme_yefl
 
 
@@ -18,7 +18,7 @@ product_name='heme a'
 product_id='EX_heme_a'
 c_source="r_1714"      # glucose exchange rxn
 growth_id=model.growth_reaction.id     # biomass rxn
-c_uptake=3
+c_uptake=5
 gluc_MW=0.180156  # g/mmol
 model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
 model.objective=model.growth_reaction.id
@@ -68,8 +68,8 @@ euva_list=results['geneTable'][results['geneTable']['target_priority_leval'].isi
 
 # compare result with ecFactory
 # load ecFactory predicted result
-ecfactory_candidates_l3=pd.read_csv('code_etfl/reference/ecFactory/results/heme_targets/candidates_L3.txt',sep='\t',index_col=0).index.tolist()
-ecfactory_candidates_l1=pd.read_csv('code_etfl/reference/ecFactory/results/heme_targets/candidates_L1.txt',sep='\t',index_col=0).index.tolist()
+ecfactory_candidates_l3=pd.read_csv('reference/ecFactory-main/tutorials/results/heme_targets/candidates_L3.txt',sep='\t',index_col=0).index.tolist()
+ecfactory_candidates_l1=pd.read_csv('reference/ecFactory-main/tutorials/results/heme_targets/candidates_L1.txt',sep='\t',index_col=0).index.tolist()
 
 common_l3=set(min_set_list).intersection(set(ecfactory_candidates_l3))
 comon_l1=set(min_set_list).intersection(set(ecfactory_candidates_l1))
@@ -89,7 +89,7 @@ print('euva vs l1:',len(euva_common_l1))
 # compare with experimental result
 print('--------------------------compare predicted candidates with experimental data')
 # load heme experimental data
-heme_exp=pd.read_excel('ETFLdesigner/data/heme_experimental_data.xlsx',index_col=0)
+heme_exp=pd.read_excel('strainOptimizer/data/heme_experimental_data.xlsx',index_col=0)
 exp_list=heme_exp.index.tolist()
 common_exp=set(min_set_list).intersection(set(exp_list))
 all_common_exp=set(fseof_list).intersection(set(exp_list))
@@ -107,7 +107,7 @@ for key in results.keys():
     # 检查是否为dict
     if isinstance(results[key],dict):
         results[key]=pd.Series(results[key])
-with pd.ExcelWriter(f'code_etfl/ETFLdesigner/output/ecYeast_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
+with pd.ExcelWriter(f'code_etfl/strainOptimizer/output/ecYeast_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
     for key in results.keys():
         results[key].to_excel(writer, sheet_name=key)
 
@@ -124,7 +124,7 @@ for key in results.keys():
     # 检查是否为dict
     if isinstance(results[key],dict):
         results[key]=pd.Series(results[key])
-with pd.ExcelWriter(f'code_etfl/ETFLdesigner/output/yefl_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
+with pd.ExcelWriter(f'code_etfl/strainOptimizer/output/yefl_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
     for key in results.keys():
         results[key].to_excel(writer, sheet_name=key)
 
