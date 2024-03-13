@@ -1,7 +1,7 @@
 import sys
 import os
 #os.chdir(r'D:\code\github\etfl\ETFLdesigner')
-sys.path.append(r"/Users/xluhon/Documents/GitHub/ETFLdesigner/ETFLdesigner")
+# sys.path.append(r"/Users/xluhon/Documents/GitHub/ETFLdesigner/ETFLdesigner")
 
 
 # load packages
@@ -9,8 +9,8 @@ from cobra.io import load_matlab_model, read_sbml_model
 from pytfa.optim.utils import symbol_sum
 from cobra.util.solver import set_objective
 import pandas as pd
-from ETFLdesigner.simulation.ecYeastFlux import *
-from ETFLdesigner.manipulation.mainFunction import *
+from strainOptimizer.simulation.ecYeastFlux import *
+from strainOptimizer.manipulation.mainFunction import *
 
 
 
@@ -27,6 +27,7 @@ model2.reactions.get_by_id("r_1714_REV").bounds = (0, 100)  # D-glucose exchange
 model2.objective = {model2.reactions.r_2111: 1}
 fba_solution1 = model2.optimize()
 model2.objective = {model2.reactions.EX_heme_a: 1}
+# result2 = productionEnvolpe(model=model2, biomassRxn='r_2111', targetRxn='EX_heme_a',substrateRxn='r_1714_REV', modelType = 'EC')
 """
 fba_solution2 = model2.optimize()
 result2 = productionEnvolpe(model=model2, biomassRxn='r_2111', targetRxn='EX_heme_a',substrateRxn='r_1714_REV', modelType = 'EC')
@@ -96,8 +97,6 @@ proID = 'draw_prot_' + uniprotID
 target_pro = fba_solution[proID]
 
 
-
-
 mutModel = model2.copy()
 mutModel.reactions.get_by_id(proID).bounds = (target_pro*5, float('inf'))
 test = mutModel.optimize()
@@ -109,6 +108,7 @@ from typing import TYPE_CHECKING, Optional
 from optlang.symbolics import Zero, add
 from cobra.util import solver as sutil
 from cobra.flux_analysis.parsimonious import pfba
+from cobra.flux_analysis import moma
 from cobra.core import Model, Solution
 
 mutModel.solver = sutil.choose_solver(mutModel, qp=True)
