@@ -35,7 +35,10 @@ mutant = model.copy()
 mutant.reactions.get_by_id(product_id).bounds = (product, float('inf'))
 
 # test MOPA
-sol = mopa(model=mutant, reference_solution=ref_sol, linear=False,model_type='ecGEM')
+sol = mopa(model=mutant,
+           reference_solution=ref_sol,
+           linear=False,
+           model_type='ecGEM')
 sol_linear=mopa(model=mutant, reference_solution=ref_sol, linear=True,model_type='ecGEM')
 
 sol_moma =  moma(model=mutant, reference_solution=ref_sol, linear=False,model_type='ecGEM')
@@ -91,10 +94,16 @@ mutant.reactions.get_by_id(c_source).bounds = -c_uptake, 0
 mutant.reactions.get_by_id(growth_id).bounds = 0, 1000
 mutant.slim_optimize()
 # test MOPA
-sol = mopa(model=mutant, reference_solution=ref_sol, linear=False,model_type='etfl')
+sol = mopa(model=mutant,
+           reference_solution=ref_sol,
+           linear=False,
+           model_type='etfl')
 sol_linear=mopa(model=mutant, reference_solution=ref_sol, linear=True,model_type='etfl')
 
-sol_moma =  moma(model=mutant, reference_solution=ref_sol, linear=False,model_type='etfl')
+sol_moma =  moma(model=mutant,
+                 reference_solution=ref_sol,
+                 linear=False,
+                 model_type='etfl')
 sol_moma_linear = moma(model=mutant, reference_solution=ref_sol, linear=True,model_type='etfl')
 
 df_compare=pd.DataFrame({'reference':ref_sol.fluxes,'MOPA':sol.fluxes,'MOPA_linear':sol_linear.fluxes,'MOMA':sol_moma.fluxes,'MOMA_linear':sol_moma_linear.fluxes})
