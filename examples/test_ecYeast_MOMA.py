@@ -1,7 +1,7 @@
 import sys
 import os
 #os.chdir(r'D:\code\github\etfl\ETFLdesigner')
-sys.path.append(r"/Users/xluhon/Documents/GitHub/ETFLdesigner/ETFLdesigner")
+# sys.path.append(r"/Users/xluhon/Documents/GitHub/ETFLdesigner/ETFLdesigner")
 
 
 # load packages
@@ -9,8 +9,8 @@ from cobra.io import load_matlab_model, read_sbml_model
 from pytfa.optim.utils import symbol_sum
 from cobra.util.solver import set_objective
 import pandas as pd
-from ETFLdesigner.simulation.ecYeastFlux import *
-from ETFLdesigner.manipulation.mainFunction import *
+from strainOptimizer.simulation.ecYeastFlux import *
+from strainOptimizer.manipulation.mainFunction import *
 
 
 

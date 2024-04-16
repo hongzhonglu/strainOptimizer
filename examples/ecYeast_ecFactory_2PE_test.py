@@ -44,7 +44,7 @@ modelParam['c_source']=c_source
 modelParam['c_uptake']=c_uptake
 modelParam['productName']=product_name
 
-action_thresholds=[0.05,0.5,1.05]     # rules for overexpression, knockout and knockdown
+action_thresholds=[0.05,0.6,1.05]     # rules for overexpression, knockout and knockdown
 # set a timer
 import time
 start_time = time.time()
@@ -62,6 +62,8 @@ print('OE:',genetable[genetable['actions']=='OE'].shape[0])
 print('KD:',genetable[genetable['actions']=='KD'].shape[0])
 print('KO:',genetable[genetable['actions']=='KO'].shape[0])
 
+output=genetable['actions']
+output.to_csv('reference/wenbin/ecFSEOF_0.05_0.6_1.05_2PE_result.csv')
 # EUVA results
 print('EUVA results:')
 print('leval 1 candidates:',genetable[genetable['target_priority_leval']==1].shape[0])
