@@ -71,10 +71,22 @@ ecmodel_result_dict={'l1':ecmodel_candidates_l1,
     'l2':ecmodel_candidates_l2,
                      'l3':ecmodel_candidates_l3}
 
+# load etfl result
+etfl_result=pd.read_excel(r'examples/result/yefl_heme a_gluc_1_ecFactory_result.xlsx',sheet_name='geneTable',index_col=0)
+etfl_candidates_l3=etfl_result[etfl_result['minimal candidates set']==1]
+etfl_candidates_l2=etfl_result[etfl_result['target_priority_leval'].isin([1,2,3])]
+etfl_candidates_l1=etfl_result
+etfl_result_dict={'l1':etfl_candidates_l1,
+    'l2':etfl_candidates_l2,
+                     'l3':etfl_candidates_l3}
+
 print('ecmodel:')
 run_evaluation_process(ecmodel_result_dict,exp_data_heme)
 print('ecFactory:')
 run_evaluation_process(ecfactory_candidates_dict,exp_data_heme)
+print('etfl:')
+run_evaluation_process(etfl_result_dict,exp_data_heme)
+
 
 
 
