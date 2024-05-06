@@ -38,10 +38,8 @@ def k_matrix_filter(model, k_matrix, alpha, tol):
 
 def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model_type='etfl',tol=0.001):
     """
-    ecFlux_scanning
     Args:
-        model : ecModel with total protein pool constraint.
-            the model should come with growth pseudoreaction as an objective to maximize.
+        model : ecModel/ETFL model.
         targetID (str): Rxn ID for the production target reaction, a exchange reaction is recommended.
         c_source (str): Rxn ID for the main carbon source uptake reaction
         c_uptake(float): carbon source uptake rate
@@ -65,6 +63,9 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
             k_genes (pd.DataFrame): k-score for each remaining gene
     """
 
+    # check model_type
+    if model_type not in ['etfl', 'ecGEM']:
+        raise ValueError('model_type should be either "etfl" or "ecGEM"')
     if filterG is None:
         filterG = False
 

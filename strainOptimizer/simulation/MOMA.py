@@ -12,7 +12,7 @@ from strainOptimizer.analysis import prepare_metabolic_solution_for_etfl, prepar
 def moma(model, reference_solution, linear: bool = True,model_type='ecGEM'):
     """Compute a solution based on (linear) Minimization of metabolic adjustment(MOMA) for a provided set of rxns.
     parameters:
-        model: ETFL model or ecGEM model
+        model: ETFL model or ecGEM model or GEM model
         reference_solution: reference_solution: reference optimization solution by cobrapy or pyTFA.
         linear: bool, whether to use linear or quadratic optimization. Default is True.
         model_type: str, 'ecGEM' or 'etfl'
@@ -20,16 +20,22 @@ def moma(model, reference_solution, linear: bool = True,model_type='ecGEM'):
         solution: the solution of MOMA
     """
     with model:
-        if model_type=='etfl':
-            reference_fluxes= prepare_metabolic_solution_for_etfl(reference_solution)
-            add_moma_etfl(model=model, reference_fluxes=reference_fluxes, linear=linear)
-        elif model_type=='ecGEM':
-            reference_fluxes= prepare_metabolic_solution_for_ec(reference_solution)
-            add_moma_ecGEM(model=model, reference_fluxes=reference_fluxes, linear=linear)
+        if model_type=='GEM':
+            from cobra.flux_analysis import moma
+            solution=moma(model=model,
+                          solution=reference_solution,
+                          linear=linear)
         else:
-            raise ValueError('model_type should be "etfl" or "ecGEM"')
-        # print(model.objective.expression)
-        solution = model.optimize()
+            if model_type=='etfl':
+                reference_fluxes= prepare_metabolic_solution_for_etfl(reference_solution)
+                add_moma_etfl(model=model, reference_fluxes=reference_fluxes, linear=linear)
+            elif model_type=='ecGEM':
+                reference_fluxes= prepare_metabolic_solution_for_ec(reference_solution)
+                add_moma_ecGEM(model=model, reference_fluxes=reference_fluxes, linear=linear)
+            else:
+                raise ValueError('model_type should be "etfl" or "ecGEM" or "GEM".')
+            # print(model.objective.expression)
+            solution = model.optimize()
     return solution
 
 

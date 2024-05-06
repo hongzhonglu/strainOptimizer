@@ -10,7 +10,7 @@ from strainOptimizer.analysis import prepare_prot_solution_for_etfl, prepare_pro
 
 
 
-def mopa(model, reference_solution, linear: bool = True,model_type='ecGEM'):
+def mopa(model, reference_solution, linear: bool = True,model_type='ecGEM',show=False):
     """Compute a solution based on (linear) Minimization of proteomic adjustment(MAPA) for a provided set of
     proteins.
     parameters:
@@ -30,7 +30,8 @@ def mopa(model, reference_solution, linear: bool = True,model_type='ecGEM'):
             add_mopa_ecGEM(model=model, reference_prots=reference_prots, linear=linear)
         else:
             raise ValueError('model_type should be "etfl" or "ecGEM"')
-        print(model.objective.expression)
+        if show:
+            print(model.objective.expression)
         solution = model.optimize()
     return solution
 

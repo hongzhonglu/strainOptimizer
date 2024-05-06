@@ -54,8 +54,8 @@ def ppFBA(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
             model.objective_direction = 'min'
             sol2=model.optimize()
     else:
-        sol2 = np.zeros(len(model.reactions))
-        return sol2
+        fluxes = np.zeros(len(model.reactions))
+        return fluxes
 
     # release the modified constraints and reset the objective as growth
     if model_type=='etfl':
@@ -85,7 +85,7 @@ def ppFBA2(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01)
     - model_type: (str) type of model to optimize:'etfl'/'ecGEM' (default: 'etfl')
 
     Returns:
-    - sol.x: (pandas.DataFrame) the optimized flux distribution
+    - sol: (cobra.Solution) the simulation result
 
     """
 
