@@ -11,24 +11,29 @@ from strainOptimizer.simulation.pprotFBA import pprotFBA_prot_conc
 
 def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
     '''
-    This function runs ecFSEOF method to identify gene targets for strain design
-    :param model: ETFL model
-    :param modelParam: a pandas series with the following parameters:
+    This function runs ecFactory method to identify gene targets for strain design
+    * Args:
+    model: ETFL/ecGEM model
+    modelParam: a pandas series with the following parameters:
         targetID: target reaction ID
         productName: product name(used to find the leak reactions)
         c_source: carbon source exchange reaction ID
         c_uptake: carbon source uptake rate
-    :param expYield: experimental yield of the biomass growth
-    :param action_thresholds: a list of three thresholds for gene targets:
+    expYield: experimental yield of the biomass growth
+    action_thresholds: a list of three thresholds for gene targets:
         1. KO threshold
         2. KD threshold
         3. OE threshold
-    :param remove_essential: a boolean value indicating whether to remove essential genes from the list of targets
-    :param model_type: a string indicating the type of model ('etfl' or 'ecGEM')
-    :return: a pandas dataframe with the following columns:
-        1. geneID: gene ID
-        2. k_score: k-score of the gene
-        3. actions: action type for the gene
+    remove_essential: a boolean value indicating whether to remove essential genes from the list of targets
+    model_type: a string indicating the type of model ('etfl' or 'ecGEM')
+
+    * Return:
+    results: a dictionary with the following keys:
+        geneTable: a pandas dataframe with the following columns:
+            geneID: gene ID
+            k_score: k-score value
+            actions: gene actions
+            minimal candidates set: a boolean value indicating whether the gene is in the minimal candidates set
     '''
     # model parameters
     targetID = modelParam['targetID']
