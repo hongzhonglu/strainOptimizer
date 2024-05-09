@@ -7,60 +7,118 @@ from strainOptimizer.io import load_model
 from matplotlib import pyplot as plt
 import numpy as np
 
-def calculate_flux_space(model,x_axis,y_axis,points=20):
-    model.objective = x_axis
-    model.objective_direction = 'max'
-    x_max=model.slim_optimize()
-    model.objective_direction = 'min'
-    x_min=model.slim_optimize()
-    x_values = np.linspace(x_min,x_max,points)
-    y_ubs = []
-    y_lbs = []
-    for x in x_values:
-        model.reactions.get_by_id(x_axis).bounds = x, x
-        model.objective = y_axis
-        model.objective_direction = 'max'
-        y_ub = model.slim_optimize()
-        y_ubs.append(y_ub)
-        model.objective_direction = 'min'
-        y_lb = model.slim_optimize()
-        y_lbs.append(y_lb)
-
-    flux_space_dict={'x_values':x_values,'y_ubs':y_ubs,'y_lbs':y_lbs,'x_axis':x_axis,'y_axis':y_axis}
-    return flux_space_dict
-
-def plot_envelope(flux_spaceList,labels,show=True):
-    # check if flux_spaceList and labels are the same length
-    if len(flux_spaceList) != len(labels):
-        raise ValueError('flux_spaceList and labels must be the same length')
-    fig, ax = plt.subplots()
-    for i in range(len(flux_spaceList)):
-        flux_space = flux_spaceList[i]
-        label=labels[i]
-        ax.fill_between(flux_space['x_values'], flux_space['y_ubs'], flux_space['y_lbs'], alpha=0.8,label=label)
-    # set axis
-    ax.set_xlabel(flux_space['x_axis'])
-    ax.set_ylabel(flux_space['y_axis'])
-    # set x,y limit as 0
-    ax.set_xlim(0, None)
-    ax.set_ylim(0, None)
-    # set legend
-    ax.legend()
-    if show:
-        plt.show()
-    return fig
+def extracti_from_list(l,indices):
+    return [l[i] for i in indices]
 
 if __name__ == '__main__':
     import os
+    from strainOptimizer.analysis.dataset import load_experiment_targets
+    from strainOptimizer.simulation import ppFBA
+    from strainOptimizer.visualization import calculate_flux_space,plot_envelope
     os.chdir(r'D:\code\github\strainOptimizer')
     solver = 'optlang-gurobi'
     model= load_model('examples/models/yeast/ecYeastGEM_batch.xml',model_type='ecGEM',solver=solver)
-    x='r_2111'
-    y='r_2024'
-    flux_spaceList=[]
-    flux_spaceList.append(calculate_flux_space(model,x,y))
-    plot_envelope(flux_spaceList,labels=['wild-type'],show=True)
+    all_geneList=[gene.id for gene in model.genes]
+    c_source='r_1714_REV'
+    c_uptake=10
+    oe_factor=2
+    model.reactions.get_by_id(c_source).bounds = c_uptake, c_uptake
 
+    # for 2-phenylethanol
+    x='r_2111'
+    y='r_1589'
+    df_exp=load_experiment_targets('2-phenylethanol')
+    df_exp=df_exp[df_exp.index.isin(all_geneList)]
+    flux_spaceList=[]
+    # calculate wild-tpe
+    flux_spaceList.append(calculate_flux_space(model,x,y))
+    # calculate mutant
+    for geneID in df_exp.index:
+        mutant=model.copy()
+        if geneID not in all_geneList:
+            continue
+        action= df_exp.loc[geneID,'action']
+        rxnidList=[rxn.id for rxn in model.genes.get_by_id(geneID).reactions if rxn.id.startswith('r_') ]
+        with mutant:
+            if action=='OE':
+                wt_sol=ppFBA(model=mutant,
+                              targetID=x,
+                              c_source='r_1714_REV',
+                              c_uptake=10,
+                              model_type='ecGEM')
+                for rxnid in rxnidList:
+                    wt_flux=wt_sol[rxnid]
+                    if wt_flux>0:
+                        mutant.reactions.get_by_id(rxnid).bounds = wt_flux*oe_factor, 1000
+                    elif wt_flux<0:
+                        mutant.reactions.get_by_id(rxnid).bounds = -1000, wt_flux*oe_factor
+            elif action in ['KD','KO']:
+                mutant.genes.get_by_id(geneID).knock_out()
+            try:
+                with mutant:
+                    flux_space=calculate_flux_space(mutant,x,y)
+            except:
+                flux_space=None
+            flux_spaceList.append(flux_space)
+
+    labels=['wild-type']+list(df_exp.index)
+    fig=plot_envelope(flux_spaceList,labels,show=False)
+    indices=[0,10,11]
+    fig=plot_envelope(extracti_from_list(flux_spaceList,indices),
+                  labels=extracti_from_list(labels,indices),
+                  show=False)
+    # set x,y axis label
+    fig.axes[0].set_xlabel('growth(/h)',fontsize=16)
+    fig.axes[0].set_ylabel('2-phenylethanol(mmol/gDW/h)',fontsize=16)
+    plt.show()
+
+
+    # for spermidine
+    x='r_2111'
+    y='r_2051'
+    df_exp=load_experiment_targets('spermidine')
+    df_exp=df_exp[df_exp.index.isin(all_geneList)]
+    flux_spaceList=[]
+    # calculate wild-tpe
+    flux_spaceList.append(calculate_flux_space(model,x,y))
+    # calculate mutant
+    for geneID in df_exp.index:
+        if geneID not in all_geneList:
+            continue
+        action= df_exp.loc[geneID,'action']
+        rxnidList=[rxn.id for rxn in model.genes.get_by_id(geneID).reactions if rxn.id.startswith('r_') ]
+        with model:
+            if action=='OE':
+                wt_sol=ppFBA(model=model,
+                              targetID=x,
+                              c_source='r_1714_REV',
+                              c_uptake=10,
+                              model_type='ecGEM')
+                for rxnid in rxnidList:
+                    wt_flux=wt_sol[rxnid]
+                    if wt_flux>0:
+                        model.reactions.get_by_id(rxnid).bounds = wt_flux*oe_factor, 1000
+                    elif wt_flux<0:
+                        model.reactions.get_by_id(rxnid).bounds = -1000, wt_flux*oe_factor
+            elif action in ['KD','KO']:
+                model.genes.get_by_id(geneID).knock_out()
+            try:
+                flux_space=calculate_flux_space(model,x,y)
+            except:
+                flux_space=None
+            flux_spaceList.append(flux_space)
+
+    labels=['wild-type']+list(df_exp.index)
+    i=10
+    fig=plot_envelope(flux_spaceList[:i],labels[:i],show=False)
+    indices=[0,10,11]
+    fig=plot_envelope(extracti_from_list(flux_spaceList,indices),
+                  labels=extracti_from_list(labels,indices),
+                  show=False)
+    # set x,y axis label
+    fig.axes[0].set_xlabel('growth(/h)',fontsize=16)
+    fig.axes[0].set_ylabel('spermidine(mmol/gDW/h)',fontsize=16)
+    plt.show()
 
 
 
