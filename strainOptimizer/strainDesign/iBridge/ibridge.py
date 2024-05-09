@@ -79,11 +79,11 @@ def generate_multiple_flux_profiles(model,targetID, c_source, c_uptake,model_typ
     # 3. simulate flux distribution for each production level
     flux_profiles={}
     count=0
-    for prod in np.linspace(min_prod,max_prod,10):
+    for prod in np.linspace(min_prod,max_prod*0.95,10):
         count+=1
-        print('Count: %d\tProduction: %0.4f' % (count, prod))
+        print('Count: %d\tProduction: %0.2f' % (count, prod))
         # constrain the production of targetID
-        model.reactions.get_by_id(targetID).bounds = prod*(1-tol), prod*(1+tol)
+        model.reactions.get_by_id(targetID).bounds = round(prod*(1-tol),2), round(prod*(1+tol),2)
 
         # run simulation
         if method == 'moma':
@@ -114,6 +114,8 @@ def generate_multiple_flux_profiles(model,targetID, c_source, c_uptake,model_typ
                     reference_solution=wt_sol,
                     linear=linear,
                     model_type=model_type)
+        else:
+            raise ValueError('method should be "moma" or "ppfba" or "mopa"')
 
         flux_profiles[prod]=sol.fluxes
 
@@ -382,7 +384,7 @@ def get_gene_result_from_rxn(rxn_result,model):
     for gene in conflict_genes:
         gene_result.pop(gene)
 
-    df_gene_result=pd.DataFrame.from_dict(gene_result,orient='index',columns=['gene_score','gene_covariance','gene_correlation','gene_action'])
+    df_gene_result=pd.DataFrame.from_dict(gene_result,orient='index',columns=['gene_score','covariance','correlation','action'])
 
     return df_gene_result
 
@@ -475,7 +477,10 @@ def run_iBridge_design(model,targetID,c_source,c_uptake,model_type,method,tol,li
         'method':method,
         'product':targetID,
         'c_source':c_source,
-        'c_uptake':c_uptake
+        'c_uptake':c_uptake,
+        'flux_profiles':df_flux,
+        'target_corr':df_target_corr,
+        'target_cov':df_target_cov,
 
     }
 
