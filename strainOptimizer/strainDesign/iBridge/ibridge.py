@@ -384,7 +384,7 @@ def get_gene_result_from_rxn(rxn_result,model):
     for gene in conflict_genes:
         gene_result.pop(gene)
 
-    df_gene_result=pd.DataFrame.from_dict(gene_result,orient='index',columns=['gene_score','gene_covariance','gene_correlation','gene_action'])
+    df_gene_result=pd.DataFrame.from_dict(gene_result,orient='index',columns=['gene_score','covariance','correlation','action'])
 
     return df_gene_result
 
