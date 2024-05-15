@@ -1,5 +1,5 @@
 from .MOPA import mopa
-from .pprotFBA import ppFBA,ppFBA2
+from .pprotFBA import ppFBA
 from .MOMA import moma
 from .FBA import fba
 from .pFBA import pFBA
