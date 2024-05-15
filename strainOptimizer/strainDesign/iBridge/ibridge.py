@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # date : 2024/4/24 
 # author : wangh
-from strainOptimizer.simulation import ppFBA2,moma,fba,mopa,pFBA
+from strainOptimizer.simulation import ppFBA,moma,fba,mopa,pFBA
 import numpy as np
 from strainOptimizer.io import load_model
 import pandas as pd
@@ -53,7 +53,7 @@ def generate_multiple_flux_profiles(model,targetID, c_source, c_uptake,model_typ
                 direction='max')
 
     else:
-        wt_sol=ppFBA2(model=model,
+        wt_sol=ppFBA(model=model,
                     targetID=growthID,
                     c_source=c_source,
                     c_uptake=c_uptake,
@@ -103,7 +103,7 @@ def generate_multiple_flux_profiles(model,targetID, c_source, c_uptake,model_typ
                     linear=linear,
                     model_type=model_type)
         elif method == 'ppfba':
-            sol=ppFBA2(model=model,
+            sol=ppFBA(model=model,
                     targetID=growthID,
                     c_source=c_source,
                     c_uptake=c_uptake,
