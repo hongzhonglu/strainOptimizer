@@ -1,6 +1,30 @@
 from cobra.io import read_sbml_model
 from strainOptimizer.manipulation.mainFunction import *
 
+# function to remove genes from ETFL models
+def check_feasibility(model):
+    try:
+        growth = model.slim_optimize()
+    except KeyError:
+        # I don't know when it happens, but I kept it!
+        growth = np.nan
+
+    return growth
+
+
+# etfl model模拟敲除，阻断gene的 translation rxn
+def ko_gene(model, gene_id):
+    try:
+        the_trans = model.get_translation(gene_id)
+    except KeyError:
+        return None
+    initial_value = the_trans.upper_bound
+    the_trans.upper_bound = 0
+    # We check for the feasibilty of the problem
+    growth = check_feasibility(model)
+    the_trans.upper_bound = initial_value
+    return growth
+
 
 
 def getALLGEMgene():
@@ -139,6 +163,33 @@ def chemostatSimulation(model0, D0):
         model0.objective = {model0.reactions.prot_pool_exchange: -1}
         solution3 = model0.optimize()
     return solution3
+
+
+def chemostatSimulationETFL(model0, D0):
+    """
+    This funcion is used to simulate the chemostat growth of yeast
+    Actually this function is general to solve the ecGEMs
+    :param model0: a ecGEMs
+    :param D0: a growth rate
+    :return: solution of fluxes
+    """
+    growth = D0
+    with model0:
+        # set growth
+        model0.reactions.get_by_id("r_2111").bounds = (growth, growth)
+        # minimization glucose uptake rate
+        model0.reactions.get_by_id("r_1714").bounds = (-1000, 1000)  # open the glucose
+        model0.objective = {model0.reactions.r_1714: -1}
+
+        solution2 = model0.optimize()
+        GR = solution2.fluxes["r_1714_REV"]  # get the glucose uptake rate
+        model0.reactions.get_by_id("r_1714_REV").bounds = (GR, GR * 1.001)
+        model0.objective = {model0.reactions.prot_pool_exchange: -1}
+        solution3 = model0.optimize()
+    return solution3
+
+
+
 
 
 

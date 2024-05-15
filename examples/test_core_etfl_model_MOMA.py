@@ -1,9 +1,9 @@
 # newly added
 import sys
 import os
-sys.path.append('/Users/xluhon/Documents/GitHub/yetfl/code')
-sys.path.append('/Users/xluhon/Documents/GitHub/etfl')
-os.chdir('/Users/xluhon/Documents/GitHub/strainOptimizer')
+# sys.path.append('/Users/xluhon/Documents/GitHub/yetfl/code')
+# sys.path.append('/Users/xluhon/Documents/GitHub/etfl')
+# os.chdir('/Users/xluhon/Documents/GitHub/strainOptimizer')
 
 
 from etfl.io.json import load_json_model, save_json_model
@@ -177,13 +177,14 @@ for id in all_enzyme_ID:
 # version 2 filter enzymes with zero values
 out_new_filter = {}
 for x, y in out_new.items():
-    if y > 1e-07:
+    if y > 1e-03:
         out_new_filter[x] = y
 all_enzyme_ID = out_new_filter.keys()
 ss2 = []
 for id in all_enzyme_ID:
-    #xx = (ecoli.enzymes.get_by_id(id).variable - out_new[id])**2
-    xx = (1-(ecoli.enzymes.get_by_id(id).variable)/(out_new[id]))**2
+    # xx = (ecoli.enzymes.get_by_id(id).variable - out_new[id])**2
+    # xx = (1-(ecoli.enzymes.get_by_id(id).variable)/(out_new[id]))**2
+    xx=(ecoli.enzymes.get_by_id(id).variable - out_new[id])
     ss2.append(xx)
 
 
@@ -201,7 +202,7 @@ ecoli.objective = symbol_sum_MOMA(ss2)
 ecoli.objective_direction = 'min'
 sol4 = ecoli.optimize()
 
-
+# ecoli.objective = 'EX_succ_e'
 out2 = prep_sol(substrate_uptake=-10, model=ecoli)
 out_new2 = dict()
 for x,y in out2.items():
@@ -231,7 +232,5 @@ plt.xlim(-10, 0)
 plt.ylim(-10, 0)
 plt.xlabel("log10(before)")
 plt.ylabel("log10(after)")
-
-
 
 

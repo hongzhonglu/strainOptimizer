@@ -21,8 +21,8 @@ def calculate_exp_consistency(predict_result, exp_data, show=True):
     '''
     Calculate the experimental consistency of the prediction results by comparing the predicted gene targets with the experimental gene targets.
     '''
-    predict_result= predict_result[predict_result['actions'].isin(['OE', 'KD', 'KO'])]
-    predict_group = predict_result.groupby('actions')
+    predict_result= predict_result[predict_result['action'].isin(['OE', 'KD', 'KO'])]
+    predict_group = predict_result.groupby('action')
     exp_group = exp_data.groupby('action')
     exp_consistency = dict()
     overall_exp_num = 0
