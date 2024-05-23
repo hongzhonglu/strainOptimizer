@@ -4,7 +4,7 @@
 # file : FBA.py
 # project : strainOptimizer
 
-def fba(model, targetID, c_source, c_uptake,model_type='etfl',direction='max'):
+def fba(model, targetID, c_source, c_uptake=None,model_type='etfl',direction='max'):
     if model_type not in ['etfl', 'ecGEM','GEM']:
         raise ValueError('model_type should be either "etfl" or "ecGEM"')
     if c_uptake is None:
