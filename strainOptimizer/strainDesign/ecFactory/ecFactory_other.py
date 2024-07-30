@@ -119,7 +119,7 @@ def find_leaks(candidates, targetID, model,product_name):
     :param candidates: a pandas dataframe with the following columns:
         1. geneID: gene ID
         2. k_score: k-score of the gene
-        3. actions: action type for the gene
+        3. action: action type for the gene
     :param targetID: target product exchange reaction ID
     :param model: COBRA model
     :param product_name: product name
@@ -170,10 +170,10 @@ def find_leaks(candidates, targetID, model,product_name):
         if len(target_genes)==0:
             print('No leak rxn has been found.\n')
             return candidates
-        df_new=pd.DataFrame({'geneID':target_genes,'k_score':np.nan,'actions':np.nan})
+        df_new=pd.DataFrame({'geneID':target_genes,'k_score':np.nan,'action':np.nan})
         df_new.set_index('geneID',inplace=True)
         df_new['k_score']=[0]*len(target_genes)
-        df_new['actions']=['KO']*len(target_genes)
+        df_new['action']=['KO']*len(target_genes)
         print('%s leak rxn has been found and added to candidates.\n'%len(target_genes))
         # add to candidates
         # candidates=candidates.append(df_new)
@@ -187,7 +187,7 @@ def remove_essential_targets(candidates,essential_data=r'essential_genes.txt'):
     :param candidates: a pandas dataframe with the following columns:
         1. geneID: gene ID
         2. k_score: k-score of the gene
-        3. actions: action type for the gene
+        3. action: action type for the gene
     :param essential_path: path to essential genes data(default:path for S.cerevisiae essential genes table)
     :return: a updated candidates dataframe
     '''
@@ -199,7 +199,7 @@ def remove_essential_targets(candidates,essential_data=r'essential_genes.txt'):
 
     # remove essential genes
     essentials = pd.read_csv(essential_path, sep='\t').Ids.str.strip()
-    ko_targets= candidates.loc[candidates.actions == 'KO'].index.tolist()
+    ko_targets= candidates.loc[candidates.action == 'KO'].index.tolist()
     # remove essential genes from ko targets
     to_remove = set(ko_targets).intersection(set(essentials))
     print(f"Removing {len(to_remove)} essential targets\n")
@@ -325,7 +325,7 @@ if __name__ == '__main__':
     test_model= load_json_model('models/ecoli_core.json')
     # yefl=load_json_model('models/yeast8_cEFL_2584_enz_128_bins__20221115_120238.json')
     model=test_model
-    geneTable=pd.DataFrame(columns=['geneID','k_score','actions'])
+    geneTable=pd.DataFrame(columns=['geneID','k_score','action'])
     # geneTable=pd.read_excel('code_etfl/strainOptimizer/output/yefl_2PE_design_results.xlsx',sheet_name='geneTable')
     targetID='r_1589'
     candidates1=find_leaks(candidates=geneTable, targetID=targetID, model=model)
