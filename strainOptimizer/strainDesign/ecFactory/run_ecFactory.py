@@ -9,7 +9,7 @@ from strainOptimizer.strainDesign.ecFactory import find_min_sets
 from strainOptimizer.manipulation.constraint.total_resource_allocation import constrain_enzymes
 from strainOptimizer.simulation.pprotFBA import pprotFBA_prot_conc
 
-def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds=[0.05,0.5,1.05],remove_essential=False,model_type='etfl'):
+def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds=[0.05,0.5,1.05],remove_essential=False):
     '''
     This function runs ecFactory method to identify gene targets for strain design
     * Args:
@@ -32,7 +32,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
         geneTable: a pandas dataframe with the following columns:
             geneID: gene ID
             k_score: k-score value
-            actions: gene actions
+            action: gene action
             minimal candidates set: a boolean value indicating whether the gene is in the minimal candidates set
     '''
     # model parameters
@@ -40,6 +40,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     productName = modelParam['productName']
     c_source = modelParam['c_source']
     c_uptake = modelParam['c_uptake']
+    model_type = modelParam['model_type']
     if model_type=='etfl':
         growth_rxnID = model.growth_reaction.id
     elif model_type=='ecGEM':
@@ -62,12 +63,12 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
                               model_type=model_type)
     # Format results table
     gene_result=results['geneTable']
-    gene_result.loc[gene_result['k_score'] >= action_thresholds[2], 'actions'] = 'OE'
-    gene_result.loc[gene_result['k_score'] <= action_thresholds[1], 'actions'] = 'KD'
-    gene_result.loc[gene_result['k_score'] <= action_thresholds[0], 'actions'] = 'KO'
+    gene_result.loc[gene_result['k_score'] >= action_thresholds[2], 'action'] = 'OE'
+    gene_result.loc[gene_result['k_score'] <= action_thresholds[1], 'action'] = 'KD'
+    gene_result.loc[gene_result['k_score'] <= action_thresholds[0], 'action'] = 'KO'
     # remove genes with no action
-    # gene_result = gene_result.loc[gene_result['actions'].notnull()]
-    gene_result = gene_result.loc[gene_result['actions'].isin(['OE','KD','KO'])]
+    # gene_result = gene_result.loc[gene_result['action'].notnull()]
+    gene_result = gene_result.loc[gene_result['action'].isin(['OE','KD','KO'])]
     print(f'ecFSEOF returned {len(gene_result)} targets\n')
     results['geneTable'] = gene_result
 
@@ -201,21 +202,21 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     results['gene_enz_fva_result']=gene_enz_fva_result
 
     # 5.3.1 Discard OE target candidates classified as futile for production(min=parsimonious=0)
-    oe_candidates=results['geneTable'][results['geneTable']['actions']=='OE'].index.tolist()
+    oe_candidates=results['geneTable'][results['geneTable']['action']=='OE'].index.tolist()
     futile_candidates=gene_enz_fva_result[(gene_enz_fva_result['prod_min']==0) & (gene_enz_fva_result['prod_minprot']==0)].index.tolist()
     futile_oe_toremove=list(set(oe_candidates).intersection(set(futile_candidates)))
     results['gene_enz_fva_result']=results['gene_enz_fva_result'].drop(futile_oe_toremove)
     print('  - Discard OE targets with min=parsimonious=0: ' + str(len(futile_oe_toremove)) + ' targets removed')
 
     # 5.3.2 Discard enzymes essential for production from KO target candidates(lb>0).
-    ko_candidates=results['geneTable'][results['geneTable']['actions']=='KO'].index.tolist()
+    ko_candidates=results['geneTable'][results['geneTable']['action']=='KO'].index.tolist()
     essential_candidates=gene_enz_fva_result[gene_enz_fva_result['prod_min']>0].index.tolist()
     essential_ko_toremove=list(set(ko_candidates).intersection(set(essential_candidates)))
     results['gene_enz_fva_result']=results['gene_enz_fva_result'].drop(essential_ko_toremove)
     print('  - Discard KO targets with min>0: ' + str(len(essential_ko_toremove)) + ' targets removed')
 
     # 5.3.3 Discard isoenzyme groups that contain an optimal isoform for biomass formation from KD and KO target candidates.
-    kd_ko_candidates=results['geneTable'][results['geneTable']['actions'].isin(['KD','KO'])].index.tolist()
+    kd_ko_candidates=results['geneTable'][results['geneTable']['action'].isin(['KD','KO'])].index.tolist()
     iso_group=[]
     for g_group in results['groups']:
         group_enz_fva_result=gene_enz_fva_result.loc[g_group]
@@ -234,8 +235,8 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     gene_euvr_compare=compare_EUVR(gene_enz_fva_result=results['gene_enz_fva_result'])
     euva_up_List=gene_euvr_compare[gene_euvr_compare.str.contains('up_')].index.tolist()
     euva_down_List=gene_euvr_compare[gene_euvr_compare.str.contains('down_')].index.tolist()
-    fseof_up_List=results['geneTable'][results['geneTable']['actions']=='OE'].index.tolist()
-    fseof_down_List=results['geneTable'][results['geneTable']['actions'].isin(['KD','KO'])].index.tolist()
+    fseof_up_List=results['geneTable'][results['geneTable']['action']=='OE'].index.tolist()
+    fseof_down_List=results['geneTable'][results['geneTable']['action'].isin(['KD','KO'])].index.tolist()
     # remove genes both in euva_up_List&fseof_down_List, euva_down_List&fseof_up_List
     euva_up_fseof_down=list(set(euva_up_List).intersection(set(fseof_down_List)))
     euva_down_fseof_up=list(set(euva_down_List).intersection(set(fseof_up_List)))
