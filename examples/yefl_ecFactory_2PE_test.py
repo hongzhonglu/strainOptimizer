@@ -70,3 +70,5 @@ for key in results.keys():
 with pd.ExcelWriter(f'examples/result/yefl_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
     for key in results.keys():
         results[key].to_excel(writer, sheet_name=key)
+
+# test

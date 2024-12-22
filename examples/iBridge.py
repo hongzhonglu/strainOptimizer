@@ -79,3 +79,25 @@ for model_type,items in resuts.items():
         eval_results[model_type][method]=exp_consistency
 
 
+# load json data
+import json
+
+with open('data/universal_model.json', 'r') as f:
+    universe = json.load(f)
+
+for met in universe['metabolites']:
+    annot_dict={}
+    for annot in met['annotation']:
+        key=annot[0]
+        value=annot[1]
+        annot_dict[key]=value
+    met['annotation']=annot_dict
+
+for rxn in universe['reactions']:
+    annot_dict={}
+    for annot in rxn['annotation']:
+        key=annot[0]
+        value=annot[1]
+        annot_dict[key]=value
+    rxn['annotation']=annot_dict
+
