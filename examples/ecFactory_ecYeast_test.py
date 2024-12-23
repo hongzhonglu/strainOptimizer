@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-# date : 2023/4/6 
-# author : wangh
-# file : ecModel_ecFactory_2PE_test.py
-# project : etfl
 # load packages
 import pandas as pd
 import numpy as np
@@ -15,24 +11,27 @@ import cobra
 cobra.Configuration().tolerance=1e-9
 
 productParam_dict={
-    '2-phenylethanol':{'productName':'2-phenylethanol',
-                       'targetID':'r_1589',
-                       'model_filepath':'examples/models/yeast/ecYeastGEM_batch.xml'},
+    # '2-phenylethanol':{'productName':'2-phenylethanol',
+    #                    'targetID':'r_1589',
+    #                    'model_filepath':'examples/models/yeast/ecYeastGEM_batch.xml'},
     # 'artemisinic_acid':{'productName':'artemisinic acid',
     #                'targetID':'SK_atemisinic_acid',
     #                'model_filepath':'examples/models/yeast/ecGEM_atemisinic.xml'},
-    'heme_acid':{'productName':'heme',
-                 'targetID':'EX_heme_a'
-                 ,'model_filepath':'examples/models/yeast/heme_ecYeastGEM.xml'},
-    'spermidine':{'productName':'spermidine',
-                  'targetID':'r_2051',
-                  'model_filepath':'examples/models/yeast/ecYeastGEM_batch.xml'}
+    # 'heme_acid':{'productName':'heme',
+    #              'targetID':'EX_heme_a'
+    #              ,'model_filepath':'examples/models/yeast/heme_ecYeastGEM.xml'},
+    # 'spermidine':{'productName':'spermidine',
+    #               'targetID':'r_2051',
+    #               'model_filepath':'examples/models/yeast/ecYeastGEM_batch.xml'}
+    'sclareol':{'productName':'sclareol',
+                'targetID':'DM_sclareol_c',
+                'model_filepath':'examples/models/yeast/ecYeastGEM_sclareol_batch.xml'}
 }
 
 modelParams_dict={'ecGEM':{
     'model_type':'ecGEM',
     'c_source':"r_1714_REV",      # glucose exchange rxn
-    'c_uptake':5,
+    'c_uptake':1,
     'growth_id':'r_2111',
     'total_enzymes':0.1,
         },
@@ -46,7 +45,8 @@ modelParams_dict={'ecGEM':{
 
 consistency_result=dict()
 # load infomation
-# productParams=productParam_dict['spermidine']
+productParams=productParam_dict['sclareol']
+model_key='ecGEM'
 for model_key,modelParam in modelParams_dict.items():
     if model_key=='etfl':
         continue
