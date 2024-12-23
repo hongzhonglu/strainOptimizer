@@ -3,7 +3,7 @@ import os
 os.chdir(r"D:\code\github\etfl")
 # load package path
 import sys
-sys.path.append(r"D:\code\github\ETFLdesigner\src\ETFLdesigner\straindesign\fseof")
+sys.path.append(r"D:\code\github\strainOptimizer\src\strainOptimizer\straindesign\fseof")
 
 # load packages
 import pandas as pd

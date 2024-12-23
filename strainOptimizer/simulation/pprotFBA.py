@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-
-
 import os
 import numpy as np
 import pandas as pd
 from pytfa.optim.utils import symbol_sum
 from cobra.util.solver import set_objective
 from etfl.optim.utils import safe_optim
+from collections import namedtuple
 
+DefaultSol = namedtuple('DefaultSol', field_names=['objective_value','fluxes'])
 
 def ppFBA(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
     """
@@ -24,7 +24,7 @@ def ppFBA(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
     - model_type: (str) type of model to optimize:'etfl'/'ecGEM' (default: 'etfl')
 
     Returns:
-    - sol.x: (pandas.DataFrame) the optimized flux distribution
+    - sol: (cobra.Solution) the simulation result
 
     """
 
@@ -57,8 +57,7 @@ def ppFBA(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
             model.objective_direction = 'min'
             sol2=model.optimize()
     else:
-        sol2 = np.zeros(len(model.reactions))
-        return sol2
+        sol2= DefaultSol('Infeasible', np.zeros(len(model.reactions)))
 
     # release the modified constraints and reset the objective as growth
     if model_type=='etfl':
@@ -70,8 +69,7 @@ def ppFBA(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
         model.objective = 'r_2111'
         model.objective_direction = 'max'
 
-    return sol2.fluxes
-
+    return sol2
 
 def etfl_ppFBA_prot_conc(model, targetID,c_source,c_uptake=1,tol_ratio=0.01):
     '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
@@ -137,3 +135,27 @@ def ecGEM_ppFBA_prot_conc(model, targetID,c_source,c_uptake=1,tol_ratio=0.01):
 
     return all_prot_conc
 
+
+def pprotFBA_prot_conc(model, targetID,c_source,enzymeIDlist=None,c_uptake=1,model_type='etfl'):
+    '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
+    para:
+        model: must be ETFL model
+        target: the target reaction ID
+        enzID_list: a list of enzyme ID. If None, all enzymes will be included
+        c_source: the carbon source ID
+        c_uptake: the carbon source uptake rate(default=1 mmol/gDW/h)
+        tol: the tolerance of the model
+    return:
+        a pandas series of protein concentration
+        '''
+    if model_type=='etfl':
+        all_enz_concentration = etfl_ppFBA_prot_conc(model=model, targetID=targetID,c_source=c_source,c_uptake=c_uptake)
+    elif model_type=='ecGEM':
+        all_enz_concentration = ecGEM_ppFBA_prot_conc(model=model, targetID=targetID,c_source=c_source,c_uptake=c_uptake)
+
+    if enzymeIDlist is None:
+        enzs_concentration=all_enz_concentration
+    else:
+        enzs_concentration=all_enz_concentration[enzymeIDlist]
+
+    return enzs_concentration

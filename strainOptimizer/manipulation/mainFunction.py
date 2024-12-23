@@ -620,15 +620,6 @@ def exchange_ecYeast(s1, subystem):
 
 
 
-
-
-
-
-
-
-
-
-
 #SLIME rxn
 def SLIME(rxnName, subsystem):
     """

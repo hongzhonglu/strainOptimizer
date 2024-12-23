@@ -28,3 +28,9 @@ strainOptimizer/__pycache__/__init__.cpython-37.pyc
 /draft/
 /reference/
 .idea/
+/logs/
+data/yeast_thermo/cc_params.npz
+data/yeast_thermo/compounds.sqlite
+/examples/wlj/
+/examples/model_growth_simulation.py
+/examples/data/sce_growth_data.csv

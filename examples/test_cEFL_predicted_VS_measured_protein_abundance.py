@@ -3,9 +3,9 @@ import sys
 import os
 
 sys.path.append('/Users/xluhon/Documents/GitHub/etfl')
-sys.path.append(r"/Users/xluhon/Documents/GitHub/ETFLdesigner/")
-from ETFLdesigner.util.model_process import *
-from ETFLdesigner.util.protein_process import *
+sys.path.append(r"/Users/xluhon/Documents/GitHub/strainOptimizer/")
+from strainOptimizer.util.model_process import *
+from strainOptimizer.util.protein_process import *
 
 from collections import namedtuple
 import pandas as pd
@@ -77,13 +77,13 @@ for enz in yeast.enzymes:
 peptides_conc = enzymes_to_peptides_conc(yeast, ret)
 pro_abundance = pd.Series(peptides_conc)
 result = pd.DataFrame({'rxnID':pro_abundance.index, 'flux':pro_abundance.values})
-result.to_excel("/Users/xluhon/Documents/GitHub/ETFLdesigner/examples/data/predicted_protein_abundance.xlsx")
+result.to_excel("/Users/xluhon/Documents/GitHub/strainOptimizer/examples/data/predicted_protein_abundance.xlsx")
 
 
 
 
 # input the proteomics under max growth rate
-result=pd.read_excel("/Users/xluhon/Documents/GitHub/ETFLdesigner/examples/data/predicted_protein_abundance.xlsx")
+result=pd.read_excel("/Users/xluhon/Documents/GitHub/strainOptimizer/examples/data/predicted_protein_abundance.xlsx")
 abundance_ex = pd.read_excel("/Users/xluhon/Documents/GitHub/De-nevo-protein-3D-structure-yeast/data/proteomics/data_PNAS_2021.xlsx")
 abundance_ex['g/gDW'] =(abundance_ex['replicate 1 (g gDW-1)']+ abundance_ex['replicate 2 (g gDW-1)']+ abundance_ex['replicate 3 (g gDW-1)'])/3
 abundance_ex=abundance_ex[['Symbol','g/gDW']]
@@ -104,7 +104,7 @@ abundance_ex1["mmol/gDW"] = abundance_ex1["g/gDW"]/abundance_ex1["MW_Kda"]# #mmo
 
 
 result['pro_measured'] = singleMapping(abundance_ex1["mmol/gDW"],abundance_ex1["gene"],result['rxnID'])
-result.to_excel("/Users/xluhon/Documents/GitHub/ETFLdesigner/examples/result/predicted_and_measured_proteomics.xlsx")
+result.to_excel("/Users/xluhon/Documents/GitHub/strainOptimizer/examples/result/predicted_and_measured_proteomics.xlsx")
 result=result[~result["pro_measured"].isna()]
 
 

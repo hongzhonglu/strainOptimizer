@@ -1,5 +1,5 @@
 from cobra.io import read_sbml_model
-from strainOptimizer.util.mainFunction import *
+from strainOptimizer.manipulation.mainFunction import *
 
 # function to remove genes from ETFL models
 def check_feasibility(model):

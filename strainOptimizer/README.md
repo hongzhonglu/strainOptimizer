@@ -1,4 +1,4 @@
-## package framework for the ETFLdesigner
+## package framework for the strainOptimizer
 
 - io: load model
   - etfl

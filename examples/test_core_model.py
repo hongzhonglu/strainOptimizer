@@ -5,7 +5,7 @@ sys.path.append('/Users/xluhon/Documents/GitHub/yetfl/code')
 sys.path.append('/Users/xluhon/Documents/GitHub/etfl')
 
 # check and set the current directory
-#os.chdir('/Users/xluhon/Documents/GitHub/ETFLdesigner')
+#os.chdir('/Users/xluhon/Documents/GitHub/strainOptimizer')
 
 
 from collections import namedtuple

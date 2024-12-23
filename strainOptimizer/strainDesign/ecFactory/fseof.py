@@ -4,7 +4,7 @@
 import os
 import numpy as np
 import pandas as pd
-from strainOptimizer.simulation import pprotFBA
+from strainOptimizer.simulation import ppFBA
 
 
 def k_matrix_filter(model, k_matrix, alpha, tol):
@@ -38,10 +38,8 @@ def k_matrix_filter(model, k_matrix, alpha, tol):
 
 def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model_type='etfl',tol=0.001):
     """
-    ecFlux_scanning
     Args:
-        model : ecModel with total protein pool constraint.
-            the model should come with growth pseudoreaction as an objective to maximize.
+        model : ecModel/ETFL model.
         targetID (str): Rxn ID for the production target reaction, a exchange reaction is recommended.
         c_source (str): Rxn ID for the main carbon source uptake reaction
         c_uptake(float): carbon source uptake rate
@@ -65,6 +63,9 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
             k_genes (pd.DataFrame): k-score for each remaining gene
     """
 
+    # check model_type
+    if model_type not in ['etfl', 'ecGEM']:
+        raise ValueError('model_type should be either "etfl" or "ecGEM"')
     if filterG is None:
         filterG = False
 
@@ -81,12 +82,13 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
         gr_rxnID = model.growth_reaction.id
     elif model_type == 'ecGEM':
         gr_rxnID = 'r_2111'
-    FC['flux_WT'] = pprotFBA.ppFBA(model=model,
+    wt_sol = ppFBA(model=model,
                                    targetID=gr_rxnID,
                                    c_source=c_source,
                                    c_uptake=c_uptake,
                                    model_type=model_type,
                                    tol_ratio=tol_ratio)
+    FC['flux_WT'] = wt_sol.fluxes
     # max_growth = FC['flux_WT'][gr_rxnID]
     # print('simulate WT-like:',max_growth)
 
@@ -101,13 +103,14 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
         biomass_yield=alpha[i]
         growth=biomass_yield*c_uptake*gluc_MW
         model.reactions.get_by_id(gr_rxnID).bounds= growth*(1-tol_ratio), growth
-        FC['flux_MAX'] = pprotFBA.ppFBA(model=model,
+        product_sol = ppFBA(model=model,
                                         targetID=targetID,
                                         c_source=c_source,
                                         c_uptake= c_uptake,
                                         model_type=model_type,
                                         tol_ratio=tol_ratio)
-        print('when growth rate is %s,production rate is %s'%(growth,FC['flux_MAX'][targetID]))
+        FC['flux_MAX'] = product_sol.fluxes
+        print('when growth rate is %s,production rate is %s'%(growth,product_sol.fluxes[targetID]))
         v_matrix.iloc[:, i] = FC['flux_MAX']
         k_matrix.iloc[:, i] = FC['flux_MAX'] / FC['flux_WT']
 

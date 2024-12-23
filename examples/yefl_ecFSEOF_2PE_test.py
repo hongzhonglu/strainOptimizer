@@ -6,7 +6,7 @@ import numpy as np
 os.chdir(r"D:/code/github/etfl")
 # package path
 import sys
-sys.path.append(r"D:/code/github/etfl/code_etfl/ETFLdesigner/ecFactory")
+sys.path.append(r"D:/code/github/etfl/code_etfl/strainOptimizer/ecFactory")
 sys.path.append(r"D:/code/github/etfl")
 # load packages
 import pandas as pd
@@ -71,15 +71,15 @@ plt.show()
 for key in results.keys():
     if isinstance(results[key],np.ndarray):
         results[key]=pd.Series(results[key])
-with pd.ExcelWriter('code_etfl/ETFLdesigner/output/yefl_2PE_design_results.xlsx') as writer:
+with pd.ExcelWriter('code_etfl/strainOptimizer/output/yefl_2PE_design_results.xlsx') as writer:
     for key in results.keys():
         results[key].to_excel(writer, sheet_name=key)
 
 
 #  save result to pickle file
 # import pickle
-# with open('code_etfl/ETFLdesigner/output/yefl_2PE_design_results.pickle', 'wb') as handle:
+# with open('code_etfl/strainOptimizer/output/yefl_2PE_design_results.pickle', 'wb') as handle:
 #     pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 # # load results dict
-# with open('code_etfl/ETFLdesigner/output/yefl_2PE_design_results.pickle', 'rb') as handle:
+# with open('code_etfl/strainOptimizer/output/yefl_2PE_design_results.pickle', 'rb') as handle:
 #     results = pickle.load(handle)
