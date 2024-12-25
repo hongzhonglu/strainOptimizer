@@ -16,7 +16,7 @@ modelParams_dict={'ecGEM':{
     'c_source':"r_1714_REV",      # glucose exchange rxn
     'c_uptake':1,
     'growth_id':'r_2111',
-    'total_enzymes':0.1,
+    'total_enzymes':0.4,
     'model_filepath':'examples/models/yeast/ecYeastGEM_sclareol_batch.xml',
         },
 'etfl':{
@@ -41,7 +41,7 @@ model=load_model(filename=modelParams['model_filepath'],
                          model_type=modelParams['model_type'])
 
 # prepare model
-constrain_enzymes(model,
+model=constrain_enzymes(model,
                 total_prot=modelParams['total_enzymes'],
                   model_type=modelParams['model_type'])
 
