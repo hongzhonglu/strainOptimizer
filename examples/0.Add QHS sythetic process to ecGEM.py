@@ -2,7 +2,7 @@ import cobra
 from cobra import Model, Reaction, Metabolite
 import os
 '''from ETFLdesigner.ETFLdesigner.io.ecModel import load_ecmodel'''
-model = cobra.io.read_sbml_model(r'D:\Modelling\Basic cobra\model\ecYeastGEM_batch860.xml')
+model = cobra.io.read_sbml_model(r'examples/models/yeast/ecYeastGEM_batch.xml')
 
 '''这一步可以开始导入青蒿酸模型进入我们的现有模型'''
 # 第一个反应
@@ -56,7 +56,7 @@ artemisinic_alcohol = Metabolite(
 reaction.add_metabolites({
     Amorpha_diene: -1.0,                                 # 紫穗槐二烯
     model.metabolites.get_by_id('s_1275[c]'): -1.0,      # O2
-    model.metabolites.get_by_id('s_1275[c]'): -1.0,      # NADPH
+    model.metabolites.get_by_id('s_1212[c]'): -1.0,      # NADPH
     model.metabolites.get_by_id('s_1207[c]'): 1.0,       # NADP+
     model.metabolites.get_by_id('s_0794[c]'): -1.0,      # H+
     model.metabolites.get_by_id('s_0803[c]'): 1.0,       # H2O
@@ -64,6 +64,15 @@ reaction.add_metabolites({
     # prot_ALDH1: -0.65359/3600/4                        # 第2步酶的1/kcat
 })
 model.add_reactions([reaction])
+
+# with model:
+#     model.add_boundary(model.metabolites.get_by_id("artemisinic_alcohol"), type="sink")  # SK_atemisinic_acid
+#     model.objective='SK_artemisinic_alcohol'
+#     model.objective_direction='max'
+#     print(model.slim_optimize())
+#     sol=model.optimize()
+#     print('Glucose uptake:',sol.fluxes['r_1714_REV'])
+#     print('Atemisinic acid production:',sol.fluxes['SK_artemisinic_alcohol'])
 
 # 第三个反应
 reaction = Reaction('atemisinic_aldehyde_sys')
@@ -88,7 +97,7 @@ atemisinic_aldehyde = Metabolite(
 reaction.add_metabolites({
     artemisinic_alcohol: -1.0,                           # 青蒿醇
     model.metabolites.get_by_id('s_1275[c]'): -1.0,      # O2
-    model.metabolites.get_by_id('s_1275[c]'): -1.0,      # NADPH
+    model.metabolites.get_by_id('s_1212[c]'): -1.0,      # NADPH
     model.metabolites.get_by_id('s_1207[c]'): 1.0,       # NADP+
     model.metabolites.get_by_id('s_0794[c]'): -1.0,      # H+
     model.metabolites.get_by_id('s_0803[c]'): 2.0,       # H2O
@@ -120,7 +129,7 @@ atemisinic_acid = Metabolite(
 reaction.add_metabolites({
     atemisinic_aldehyde: -1.0,  # 青蒿醛
     model.metabolites.get_by_id('s_1275[c]'): -1.0,      # O2
-    model.metabolites.get_by_id('s_1275[c]'): -1.0,      # NADPH
+    model.metabolites.get_by_id('s_1212[c]'): -1.0,      # NADPH
     model.metabolites.get_by_id('s_1207[c]'): 1.0,       # NADP+
     model.metabolites.get_by_id('s_0794[c]'): -1.0,      # H+
     model.metabolites.get_by_id('s_0803[c]'): 1.0,       # H2O
@@ -130,6 +139,14 @@ reaction.add_metabolites({
 model.add_reactions([reaction])
 
 model.add_boundary(model.metabolites.get_by_id("atemisinic_acid"), type="sink")  # SK_atemisinic_acid
+
+with model:
+    model.objective='SK_atemisinic_acid'
+    model.objective_direction='max'
+    print(model.slim_optimize())
+    sol=model.optimize()
+    print('Glucose uptake:',sol.fluxes['r_1714_REV'])
+    print('Atemisinic acid production:',sol.fluxes['SK_atemisinic_acid'])
 
 '''# ADS加入蛋白池
 reaction = Reaction('draw_ADS')
@@ -153,5 +170,5 @@ model.add_reactions([reaction])
 
 '''model.remove_reactions(model.reactions.get_by_id('draw_EGT2'))'''
 
-output_path = "C:/Users/Administrator/Desktop/ecGEM with atemisinic acid.xml"
+output_path = "examples/models/yeast/ecGEM_atemisinic.xml"
 cobra.io.write_sbml_model(model, output_path)
