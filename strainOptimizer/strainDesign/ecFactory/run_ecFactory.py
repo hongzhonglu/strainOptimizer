@@ -291,7 +291,6 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
                                                                            gene_enz_fva_result=results['gene_enz_fva_result'],
                                                                             gene_enz_dict=results['gene_enz_dict'],
                                                                            model_type=model_type)
-    # 判断 min_set_analysis_result 是否为空
     if not min_set_analysis_result.empty:
         print('  - Minimal set of targets: %s'%len(min_set_analysis_result[min_set_analysis_result['score']<(1-tol_tatio)]))
         results['min_set_analysis_result']=min_set_analysis_result
