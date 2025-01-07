@@ -52,3 +52,9 @@ def calculate_exp_consistency(predict_result, exp_data, show=True):
             print(exp_consistency[key])
 
     return exp_consistency
+
+
+def gene_id_to_name(geneIDlist,annotation_file=r'data/s288c_geneNames.csv'):
+    df=pd.read_csv(annotation_file,index_col=0)
+    df_geneName=df[df.index.isin(geneIDlist)]['geneName']
+    return df_geneName

@@ -170,5 +170,4 @@ model.add_reactions([reaction])
 
 '''model.remove_reactions(model.reactions.get_by_id('draw_EGT2'))'''
 
-output_path = "examples/models/yeast/ecGEM_atemisinic.xml"
-cobra.io.write_sbml_model(model, output_path)
+

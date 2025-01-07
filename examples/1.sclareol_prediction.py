@@ -5,7 +5,10 @@ import numpy as np
 from strainOptimizer.io import load_model
 from strainOptimizer.strainDesign.ecFactory import run_ecFactory
 from strainOptimizer.manipulation.constraint.total_resource_allocation import constrain_enzymes
+import os
 
+# set workdir
+os.chdir(r'D:\code\github\strainOptimizer')
 
 # set patameters
 productParams={'productName':'sclareol',

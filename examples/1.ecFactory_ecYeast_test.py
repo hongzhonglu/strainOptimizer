@@ -14,18 +14,18 @@ productParam_dict={
     # '2-phenylethanol':{'productName':'2-phenylethanol',
     #                    'targetID':'r_1589',
     #                    'model_filepath':'examples/models/yeast/ecYeastGEM_batch.xml'},
-    # 'artemisinic_acid':{'productName':'artemisinic acid',
-    #                'targetID':'SK_atemisinic_acid',
-    #                'model_filepath':'examples/models/yeast/ecGEM_atemisinic.xml'},
+    'artemisinic_acid':{'productName':'artemisinic acid',
+                   'targetID':'SK_atemisinic_acid',
+                   'model_filepath':'examples/models/yeast/ecGEM_atemisinic.xml'},
     # 'heme_acid':{'productName':'heme',
     #              'targetID':'EX_heme_a'
     #              ,'model_filepath':'examples/models/yeast/heme_ecYeastGEM.xml'},
     # 'spermidine':{'productName':'spermidine',
     #               'targetID':'r_2051',
     #               'model_filepath':'examples/models/yeast/ecYeastGEM_batch.xml'}
-    'sclareol':{'productName':'sclareol',
-                'targetID':'DM_sclareol_c',
-                'model_filepath':'examples/models/yeast/ecYeastGEM_sclareol_batch.xml'}
+    # 'sclareol':{'productName':'sclareol',
+    #             'targetID':'DM_sclareol_c',
+    #             'model_filepath':'examples/models/yeast/ecYeastGEM_sclareol_batch.xml'}
 }
 
 modelParams_dict={'ecGEM':{
@@ -35,17 +35,17 @@ modelParams_dict={'ecGEM':{
     'growth_id':'r_2111',
     'total_enzymes':0.1,
         },
-'etfl':{
-    'model_type':'etfl',
-    'c_source':"r_1714",
-    'c_uptake':1,
-    'growth_id':'r_2111',
-    'total_enzymes':0.1,
-}}
+# 'etfl':{
+#     'model_type':'etfl',
+#     'c_source':"r_1714",
+#     'c_uptake':1,
+#     'growth_id':'r_2111',
+#     'total_enzymes':0.1,}
+}
 
 consistency_result=dict()
 # load infomation
-productParams=productParam_dict['sclareol']
+productParams=productParam_dict['artemisinic_acid']
 model_key='ecGEM'
 for model_key,modelParam in modelParams_dict.items():
     if model_key=='etfl':
@@ -93,7 +93,7 @@ for model_key,modelParam in modelParams_dict.items():
                 print(model.slim_optimize())
 
 
-        action_thresholds=[0.05,0.3,1.05]     # rules for overexpression, knockout and knockdown
+        action_thresholds=[0.05,0.5,1.05]     # rules for overexpression, knockout and knockdown
 
         # set a timer
         import time
@@ -124,7 +124,7 @@ for model_key,modelParam in modelParams_dict.items():
         #     with pd.ExcelWriter(f'examples/result/ecYeast_{productName}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
         #         for key in results.keys():
         #             results[key].to_excel(writer, sheet_name=key)
-        #
+
 
         # Evaluate result
 

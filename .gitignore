@@ -36,3 +36,4 @@ data/yeast_thermo/compounds.sqlite
 /examples/data/sce_growth_data.csv
 /logs/
 /examples/result/
+/sclareol_cell_factory_design/

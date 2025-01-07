@@ -16,6 +16,9 @@ def parse_hit_geneName(consistency_result,experimental_data):
 df_ecYeast=pd.read_excel(r'examples/result/ecGEM_sclareol_gluc_1_ecFactory_result.xlsx',sheet_name='geneTable',index_col=0)
 df_efl=pd.read_excel('examples/result/etfl_sclareol_gluc_5_ecFactory_result.xlsx',sheet_name='geneTable',index_col=0)
 
+df_ecYeast['geneName']=dataset.gene_id_to_name(df_ecYeast.index)
+df_efl['geneName']=dataset.gene_id_to_name(df_efl.index)
+
 # load experimental dataset
 exp_data=dataset.load_experiment_targets(product='sclareol')
 
