@@ -31,3 +31,4 @@ strainOptimizer/__pycache__/__init__.cpython-37.pyc
 /logs/
 data/yeast_thermo/cc_params.npz
 data/yeast_thermo/compounds.sqlite
+/sclareol_cell_factory_design/
