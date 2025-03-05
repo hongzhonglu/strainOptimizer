@@ -27,7 +27,7 @@ def load_ecmodel(filename):
     return model
 
 
-def load_model(filename:str , model_type: ['etfl','ecGEM'] ,solver=None):
+def load_model(filename:str , model_type: ['etfl','ecGEM','gem'] ,solver=None):
     '''load ecModel/ETFL model
     parameters:
         filename: str, the path of the model file
@@ -40,7 +40,8 @@ def load_model(filename:str , model_type: ['etfl','ecGEM'] ,solver=None):
         model=load_ecmodel(filename)
     elif model_type=='etfl':
         model=load_etfl_model(filename,solver=solver)
-
+    elif model_type=='gem':
+        model=read_sbml_model(filename)
     # set tolerance as 1e-9
     model.tolerance = 1e-9
     return model

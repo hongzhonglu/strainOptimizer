@@ -9,7 +9,7 @@ from strainOptimizer.strainDesign.ecFactory import find_min_sets
 from strainOptimizer.manipulation.constraint.total_resource_allocation import constrain_enzymes
 from strainOptimizer.simulation.pprotFBA import pprotFBA_prot_conc
 
-def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds=[0.05,0.5,1.05],remove_essential=False):
+def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds=[0.05,0.5,1.05],remove_essential=False,steps=123):
     '''
     This function runs ecFactory method to identify gene targets for strain design
     * Args:
@@ -72,7 +72,8 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     print(f'ecFSEOF returned {len(gene_result)} targets\n')
     results['geneTable'] = gene_result
 
-    # return results
+    if steps==1:
+        return results
 
     # 2.- Add flux leak targets (those genes not optimal for production that may consume the product of interest.
     # (probaly extend the approach to inmediate precurssors)
@@ -291,7 +292,6 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
                                                                            gene_enz_fva_result=results['gene_enz_fva_result'],
                                                                             gene_enz_dict=results['gene_enz_dict'],
                                                                            model_type=model_type)
-    # 判断 min_set_analysis_result 是否为空
     if not min_set_analysis_result.empty:
         print('  - Minimal set of targets: %s'%len(min_set_analysis_result[min_set_analysis_result['score']<(1-tol_tatio)]))
         results['min_set_analysis_result']=min_set_analysis_result

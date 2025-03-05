@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # date : 2024/5/6 
 # author : wangh
-# file : iBridge2.py
+# file : iBridge.py
 # project : strainOptimizer
 from strainOptimizer.strainDesign import run_iBridge_design
 from strainOptimizer.io import load_model
@@ -78,4 +78,26 @@ for model_type,items in resuts.items():
         exp_consistency=calculate_exp_consistency(df_pred,df_exp)
         eval_results[model_type][method]=exp_consistency
 
+
+# load json data
+import json
+
+with open('data/universal_model.json', 'r') as f:
+    universe = json.load(f)
+
+for met in universe['metabolites']:
+    annot_dict={}
+    for annot in met['annotation']:
+        key=annot[0]
+        value=annot[1]
+        annot_dict[key]=value
+    met['annotation']=annot_dict
+
+for rxn in universe['reactions']:
+    annot_dict={}
+    for annot in rxn['annotation']:
+        key=annot[0]
+        value=annot[1]
+        annot_dict[key]=value
+    rxn['annotation']=annot_dict
 
