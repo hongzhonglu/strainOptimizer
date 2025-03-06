@@ -179,7 +179,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
     return FC
 
 
-def run_FSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,model_type='etfl'):
+def run_ecFSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,model_type='etfl'):
     """
     Run Flux-scanning with Enforced Objective Function for a specified production target.
 

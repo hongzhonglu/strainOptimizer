@@ -2,7 +2,7 @@
 import sys
 # sys.path.append(r"D:\code\github\etfl\code_etfl\strainOptimizer\ecFactory")
 import pandas as pd
-from strainOptimizer.strainDesign.ecFactory import fseof
+from strainOptimizer.strainDesign.ecFactory import ecfseof
 from strainOptimizer.strainDesign.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR
 from strainOptimizer.analysis.enzyme_variety_analysis import enzymeVA
 from strainOptimizer.strainDesign.ecFactory import find_min_sets
@@ -54,7 +54,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     Nsteps = 16  # number of FBA steps in ecFSEOF
     step = step + 1
     print(f'{step}.-  **** Running ecFSEOF method (ref: GECKO utilities) ****')
-    results = fseof.run_FSEOF(model=model,
+    results = ecfseof.run_ecFSEOF(model=model,
                               targetID=targetID,
                               c_source=c_source,
                               c_uptake=c_uptake,
