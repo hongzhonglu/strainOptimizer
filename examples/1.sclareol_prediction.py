@@ -64,6 +64,9 @@ expYield=max_yield*0.49
 alphaLims=(0.5*expYield,2*expYield)
 
 action_thresholds=[0.05,0.5,1.05]     # rules for overexpression, knockout and knockdown
+
+# load transcriptome data
+
 # set a timer
 import time
 start_time = time.time()

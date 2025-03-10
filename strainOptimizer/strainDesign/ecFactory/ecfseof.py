@@ -82,7 +82,29 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
         gr_rxnID = model.growth_reaction.id
     elif model_type == 'ecGEM':
         gr_rxnID = 'r_2111'
-    wt_sol = ppFBA(model=model,
+    # check if model has transcriptome attribute
+    if hasattr(model, 'transcriptome'):
+        print('integrating omic data to model')
+        from strainOptimizer.manipulation.integration import integrate_omic_data_to_ecmodel
+        # import numpy as np
+        expression_threshold = np.percentile(model.transcriptome, 25)
+        params = {'objective_reaction_id': gr_rxnID, 
+                  'obj_frac': 0.4,
+                  'expression_threshold':expression_threshold}
+        with model:
+            model = integrate_omic_data_to_ecmodel(model=model,
+                                                    omic_data=model.transcriptome,
+                                                    method='GIMME',
+                                                    parameters=params)
+        wt_sol = ppFBA(model=model,
+                                   targetID=gr_rxnID,
+                                   c_source=c_source,
+                                   c_uptake=c_uptake,
+                                   model_type=model_type,
+                                   tol_ratio=tol_ratio)
+
+    else:
+        wt_sol = ppFBA(model=model,
                                    targetID=gr_rxnID,
                                    c_source=c_source,
                                    c_uptake=c_uptake,

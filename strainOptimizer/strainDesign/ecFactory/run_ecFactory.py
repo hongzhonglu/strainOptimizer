@@ -165,25 +165,38 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     # fix production rate as 1% of the max production rate
     # model.reactions.get_by_id(targetID).bounds = max_prod*0.01, max_prod*0.01
     print('  - Maximize biomass production')
+    
     # set growth as objective
-    model.objective = growth_rxnID
-    model.objective_direction = 'max'
-    # run parsimonious protein usages FBA for max growth
-    wt_minprotFBA_protconc=pprotFBA_prot_conc(model=model,
-                                              targetID=growth_rxnID,
-                                              enzymeIDlist=target_enz_list,
-                                              c_source=c_source,
-                                              c_uptake=c_uptake,
-                                              model_type=model_type)
-    # run enzyme usage variety analysis
-    wt_enz_fva_result=enzymeVA(model=model,
-                               targetID=growth_rxnID,
-                               enzymeIDlist=target_enz_list,
-                               c_source=c_source,
-                               c_uptake=c_uptake,
-                               fraction_of_optimum=0.99,
-                               obj_direction='max',
-                               model_type=model_type)
+    with model:
+        # check if model has transcriptome
+        if hasattr(model, 'transcriptome'):
+            from strainOptimizer.manipulation.integration import integrate_omic_data_to_ecmodel
+            params = {'objective_reaction_id': growth_rxnID, 
+                      'obj_frac': 0.4,
+                      'expression_threshold':12}
+            model=integrate_omic_data_to_ecmodel(model=model,
+                                                  omic_data=model.transcriptome,
+                                                  method='GIMME',
+                                                  parameters=params)
+            
+        model.objective = growth_rxnID
+        model.objective_direction = 'max'
+        # run parsimonious protein usages FBA for max growth
+        wt_minprotFBA_protconc=pprotFBA_prot_conc(model=model,
+                                                targetID=growth_rxnID,
+                                                enzymeIDlist=target_enz_list,
+                                                c_source=c_source,
+                                                c_uptake=c_uptake,
+                                                model_type=model_type)
+        # run enzyme usage variety analysis
+        wt_enz_fva_result=enzymeVA(model=model,
+                                targetID=growth_rxnID,
+                                enzymeIDlist=target_enz_list,
+                                c_source=c_source,
+                                c_uptake=c_uptake,
+                                fraction_of_optimum=0.99,
+                                obj_direction='max',
+                                model_type=model_type)
 
     wt_enz_fva_result['minprotFBA']=wt_minprotFBA_protconc
     results['wt_enz_fva_result']=wt_enz_fva_result     # can be deleted
