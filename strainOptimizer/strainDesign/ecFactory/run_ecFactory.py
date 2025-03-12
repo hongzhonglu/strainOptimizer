@@ -45,7 +45,12 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
         growth_rxnID = model.growth_reaction.id
     elif model_type=='ecGEM':
         growth_rxnID = 'r_2111'
-    gluc_MW=0.180156  # g/mmol
+
+    try:
+        substrate_MW=modelParam['substrate_MW']  # g/mmol
+    except:
+        # if no substrate molecular weight, use glucose as default
+        substrate_MW=0.180156
 
     step = 0
 
@@ -60,7 +65,8 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
                               c_uptake=c_uptake,
                               alphaLims=alphaLims,
                               Nsteps=Nsteps,
-                              model_type=model_type)
+                              model_type=model_type,
+                                  substrate_MW=substrate_MW)
     # Format results table
     gene_result=results['geneTable']
     gene_result.loc[gene_result['k_score'] >= action_thresholds[2], 'action'] = 'OE'
@@ -123,7 +129,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     # 5.1 - Run EUVA for optimal production conditions
     print(str(step) + '.1-  **** Running EUVA for optimal production conditions ****')
     # Fix suboptimal experimental biomass yield conditions
-    fix_gr = expYield * gluc_MW* c_uptake
+    fix_gr = expYield * substrate_MW* c_uptake
     model.reactions.get_by_id(growth_rxnID).bounds = fix_gr, fix_gr
     print(' Fix suboptimal experimental biomass = ' + str(fix_gr) + ' h-1')
 

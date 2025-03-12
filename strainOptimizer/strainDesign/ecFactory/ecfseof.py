@@ -36,7 +36,7 @@ def k_matrix_filter(model, k_matrix, alpha, tol):
     return k_matrix
 
 
-def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model_type='etfl',tol=0.001):
+def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filterG=False,model_type='etfl',tol=0.001):
     """
     Args:
         model : ecModel/ETFL model.
@@ -72,7 +72,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
     if c_uptake is None:
         c_uptake = 1
 
-    gluc_MW=0.180156 #g/mmol
+    # gluc_MW=0.180156 #g/mmol
     tol_ratio=0.01
 
     #step 1: build reactions k_matrix
@@ -123,7 +123,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
     # simulate fluxes distribution in different growth rate conditions
     for i in range(len(alpha)):
         biomass_yield=alpha[i]
-        growth=biomass_yield*c_uptake*gluc_MW
+        growth=biomass_yield*c_uptake*substrate_MW
         model.reactions.get_by_id(gr_rxnID).bounds= growth*(1-tol_ratio), growth
         product_sol = ppFBA(model=model,
                                         targetID=targetID,
@@ -201,7 +201,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, filterG=False,model
     return FC
 
 
-def run_ecFSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,model_type='etfl'):
+def run_ecFSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,substrate_MW,model_type='etfl'):
     """
     Run Flux-scanning with Enforced Objective Function for a specified production target.
 
@@ -226,7 +226,7 @@ def run_ecFSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,model_type
     # Define alpha vector for suboptimal enforced objective values
     alphaV = np.linspace(alphaLims[0], alphaLims[1], Nsteps)
     # Run FSEOF analysis
-    results = flux_scanning(model=model, targetID=targetID, c_source=c_source,c_uptake=c_uptake, alpha=alphaV,model_type=model_type)
+    results = flux_scanning(model=model, targetID=targetID, c_source=c_source,c_uptake=c_uptake, alpha=alphaV,model_type=model_type,substrate_MW=substrate_MW)
 
     # Create gene table
     geneTable = pd.DataFrame(index=results['genes'], columns=["gene_names", "k_score"], dtype=float)
