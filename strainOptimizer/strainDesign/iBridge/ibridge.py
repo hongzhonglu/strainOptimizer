@@ -28,7 +28,6 @@ def generate_multiple_flux_profiles(model,targetID, c_source, c_uptake,model_typ
     if c_uptake is None:
         c_uptake = 1
 
-    gluc_MW = 0.180156  # g/mmol
     tol_ratio = 0.01
 
     if growthID is None:
@@ -335,7 +334,7 @@ def get_endogenous_reaction_result(df_bridge_candidate, met_info, flux_corr_df, 
 
                 rxn_result[target_reaction] = [rxn_score,corr_val,cov_val]
 
-    col=['rxn_score','covariance','correlation']
+    col=['rxn_score','correlation','covariance']
     df_rxn_result=pd.DataFrame.from_dict(rxn_result,orient='index',columns=col)
     df_rxn_result['action']=['OE' if i>0 else 'KD' for i in df_rxn_result['rxn_score']]
 
