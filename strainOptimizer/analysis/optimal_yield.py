@@ -36,7 +36,10 @@ def cal_max_yield(model,targetID,c_source,model_type='etfl',tol_ratio=0.001):
         opt_c_uptake=model.slim_optimize()
 
     # 4. calculate the maximum yield
-    max_yield=max_prod/opt_c_uptake    # mmol/mmol carbon source
+    try:
+        max_yield=max_prod/opt_c_uptake    # mmol/mmol carbon source
+    except:
+        max_yield=0
     # max_yield=abs(max_yield)
 
     # restore the fixed bounds

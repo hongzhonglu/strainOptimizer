@@ -287,6 +287,8 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
 
 
     # return results
+    if steps==12:
+        return results
 
     # # 6.- combine candidate targets
     step=step+1
@@ -296,10 +298,20 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     c_source=modelParam['c_source']
     c_uptake=modelParam['c_uptake']
     targetID=modelParam['targetID']
-    if model_type=='etfl':
-        candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin([1.0,2.0])].index.tolist()
-    elif model_type=='ecGEM':
-        candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin([1,2,3])].index.tolist()
+
+    # choose the targets range for combined set calculation
+    l1_targets_numb=len(leval1_list)
+    l2_targets_numb=len(leval2_list)
+    l3_targets_numb=len(leval3_list)
+    if l1_targets_numb>30:
+        selection_range=[1]
+    elif l1_targets_numb+l2_targets_numb>30:
+        selection_range=[1,2]
+    else:
+        selection_range=[1,2,3]
+
+    # get candidate
+    candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin(selection_range)].index.tolist()
     print("Finding the minimal set of %s candidates to achieve the max target production yield" %len(candidatesID_list))
     # find minmal sets of targets
     min_set_analysis_result,optimal_prod_result=find_min_sets.find_min_set(model=model,
@@ -310,7 +322,8 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
                                                                            geneIDlist=candidatesID_list,
                                                                            gene_enz_fva_result=results['gene_enz_fva_result'],
                                                                             gene_enz_dict=results['gene_enz_dict'],
-                                                                           model_type=model_type)
+                                                                           model_type=model_type,
+                                                                           c_source_MW=substrate_MW)
     if not min_set_analysis_result.empty:
         print('  - Minimal set of targets: %s'%len(min_set_analysis_result[min_set_analysis_result['score']<(1-tol_tatio)]))
         results['min_set_analysis_result']=min_set_analysis_result
