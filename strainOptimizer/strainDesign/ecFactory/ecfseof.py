@@ -4,7 +4,7 @@
 import os
 import numpy as np
 import pandas as pd
-from strainOptimizer.simulation import ppFBA
+from strainOptimizer.simulation import ppFBA,moma,mopa,pFBA
 
 
 def k_matrix_filter(model, k_matrix, alpha, tol):
@@ -36,7 +36,7 @@ def k_matrix_filter(model, k_matrix, alpha, tol):
     return k_matrix
 
 
-def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filterG=False,model_type='etfl',tol=0.001):
+def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filterG=False,model_type='etfl',tol=0.001,method='ppfba'):
     """
     Args:
         model : ecModel/ETFL model.
@@ -125,16 +125,63 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
         biomass_yield=alpha[i]
         growth=biomass_yield*c_uptake*substrate_MW
         model.reactions.get_by_id(gr_rxnID).bounds= growth*(1-tol_ratio), growth
-        product_sol = ppFBA(model=model,
-                                        targetID=targetID,
-                                        c_source=c_source,
-                                        c_uptake= c_uptake,
-                                        model_type=model_type,
-                                        tol_ratio=tol_ratio)
-        FC['flux_MAX'] = product_sol.fluxes
+        if method == 'ppfba':
+            product_sol = ppFBA(model=model,
+                                            targetID=targetID,
+                                            c_source=c_source,
+                                            c_uptake= c_uptake,
+                                            model_type=model_type,
+                                            tol_ratio=tol_ratio)
+        elif method == 'pfba':
+            with model:
+                product_sol = pFBA(model=model,
+                                                targetID=targetID,
+                                                c_source=c_source,
+                                                c_uptake=c_uptake,
+                                                model_type=model_type,
+                                                direction='max')
+        elif method == 'moma':
+            with model:
+                if model_type == 'etfl':
+                    model.reactions.get_by_id(c_source).bounds = -c_uptake, 0
+                elif model_type == 'ecGEM':
+                    model.reactions.get_by_id(c_source).bounds = 0, c_uptake
+                # 1.set the target objective
+                model.reactions.get_by_id(targetID).bounds = 0, 1000
+                model.objective = targetID
+                model.objective_direction = 'max'
+                product= model.slim_optimize()
+                model.reactions.get_by_id(targetID).bounds= product,1000
+                product_sol=moma(model=model,
+                                 reference_solution=wt_sol,
+                                 linear=True,
+                                 model_type=model_type)
+        elif method == 'mopa':
+            with model:
+                # open c uptake
+                if model_type == 'etfl':
+                    model.reactions.get_by_id(c_source).bounds = -c_uptake,0
+                elif model_type == 'ecGEM':
+                    model.reactions.get_by_id(c_source).bounds = 0, c_uptake
+                # 1.set the target objective
+                model.reactions.get_by_id(targetID).bounds = 0, 1000
+                model.objective = targetID
+                model.objective_direction = 'max'
+                product = model.slim_optimize()
+                model.reactions.get_by_id(targetID).bounds = product, 1000
+                # release growth rate constraint
+                # model.reactions.get_by_id(growth_id)
+                product_sol=mopa(model=model,
+                                 reference_solution=wt_sol,
+                                 linear=True,
+                                 model_type=model_type,
+                                 show=False)
+
+        FC['flux_MUT'] = product_sol.fluxes
         print('when growth rate is %s,production rate is %s'%(growth,product_sol.fluxes[targetID]))
-        v_matrix.iloc[:, i] = FC['flux_MAX']
-        k_matrix.iloc[:, i] = FC['flux_MAX'] / FC['flux_WT']
+        # v_matrix.iloc[:, i] = FC['flux_MUT']
+        v_matrix[alpha[i]] = FC['flux_MUT']
+        k_matrix[alpha[i]] = FC['flux_MUT'] / FC['flux_WT']
 
     # step 2: calculate reactions k scores
     # filter rxns according to k_matrix
@@ -201,7 +248,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
     return FC
 
 
-def run_ecFSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,substrate_MW,model_type='etfl'):
+def run_ecFSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,substrate_MW,model_type='etfl',simulation_method='ppfba'):
     """
     Run Flux-scanning with Enforced Objective Function for a specified production target.
 
@@ -226,7 +273,14 @@ def run_ecFSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,substrate_
     # Define alpha vector for suboptimal enforced objective values
     alphaV = np.linspace(alphaLims[0], alphaLims[1], Nsteps)
     # Run FSEOF analysis
-    results = flux_scanning(model=model, targetID=targetID, c_source=c_source,c_uptake=c_uptake, alpha=alphaV,model_type=model_type,substrate_MW=substrate_MW)
+    results = flux_scanning(model=model,
+                            targetID=targetID,
+                            c_source=c_source,
+                            c_uptake=c_uptake,
+                            alpha=alphaV,
+                            model_type=model_type,
+                            substrate_MW=substrate_MW,
+                            method=simulation_method)
 
     # Create gene table
     geneTable = pd.DataFrame(index=results['genes'], columns=["gene_names", "k_score"], dtype=float)

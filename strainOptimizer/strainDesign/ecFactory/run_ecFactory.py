@@ -41,6 +41,11 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     c_source = modelParam['c_source']
     c_uptake = modelParam['c_uptake']
     model_type = modelParam['model_type']
+    try:
+        simulation_method = modelParam['simulation_method']
+    except:
+        simulation_method = 'ppfba'  # default simulation method is ppfba
+
     if model_type=='etfl':
         growth_rxnID = model.growth_reaction.id
     elif model_type=='ecGEM':
@@ -56,7 +61,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
 
     # 1.- Run FSEOF to find gene candidates
     # Parameters for FSEOF method
-    Nsteps = 16  # number of FBA steps in ecFSEOF
+    Nsteps = 10  # number of FBA steps in ecFSEOF
     step = step + 1
     print(f'{step}.-  **** Running ecFSEOF method (ref: GECKO utilities) ****')
     results = ecfseof.run_ecFSEOF(model=model,
@@ -66,7 +71,8 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
                               alphaLims=alphaLims,
                               Nsteps=Nsteps,
                               model_type=model_type,
-                                  substrate_MW=substrate_MW)
+                                  substrate_MW=substrate_MW,
+                                  simulation_method=simulation_method)
     # Format results table
     gene_result=results['geneTable']
     gene_result.loc[gene_result['k_score'] >= action_thresholds[2], 'action'] = 'OE'

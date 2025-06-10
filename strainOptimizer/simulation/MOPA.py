@@ -21,6 +21,7 @@ def mopa(model, reference_solution, linear: bool = True,model_type='ecGEM',show=
     return:
         solution: the solution of MOPA
     """
+    model.tolerance = 1e-9
     with model:
         if model_type=='etfl':
             reference_prots= prepare_prot_solution_for_etfl(reference_solution)
