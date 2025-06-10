@@ -2,7 +2,7 @@ import math
 import numpy as np
 import statistics
 import pandas as pd
-from ETFLdesigner.util.mainFunction import *
+from strainOptimizer.manipulation.mainFunction import *
 
 def getSurfaceRatio(volume_ratio = 0.005/100, Vcell = 82, Scell=91.27):
     """

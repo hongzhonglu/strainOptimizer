@@ -234,7 +234,7 @@ def sensitivityEnzymeLevel(Model, rxn_list, rxnID, down_factor = 1, up_factor = 
         rxn_list_test = [i for i in rxn_list if i != rxnID]
         # open all other protein usage
         for i in rxn_list_test:
-            model.reactions.get_by_id(i).bounds = (0, 10)
+            Model.reactions.get_by_id(i).bounds = (0, 10)
         # set the new upper bound for the test reaction
         upper_bound = Model.reactions.get_by_id(rxnID).upper_bound
         # decrease and increase the upper bound

@@ -2,10 +2,10 @@
 import sys
 import os
 
-sys.path.append('/Users/xluhon/Documents/GitHub/etfl')
-sys.path.append(r"/Users/xluhon/Documents/GitHub/strainOptimizer/")
-from strainOptimizer.util.model_process import *
-from strainOptimizer.util.protein_process import *
+# sys.path.append('/Users/xluhon/Documents/GitHub/etfl')
+# sys.path.append(r"/Users/xluhon/Documents/GitHub/strainOptimizer/")
+from strainOptimizer.manipulation.model_process import *
+from strainOptimizer.manipulation.protein_process import *
 
 from collections import namedtuple
 import pandas as pd
@@ -19,7 +19,7 @@ solver = 'optlang-gurobi'
 
 # ec_cobra.reactions.ATPM.lower_bound = 0
 growth_reaction_id = 'r_4041'
-yeast = load_json_model('examples/models/yeast/yeast8_cEFL_2584_enz_128_bins__20221031_130538.json', solver=solver)
+yeast = load_json_model('examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json', solver=solver)
 
 # initial test
 yeast.reactions.r_1714.lower_bound = -10

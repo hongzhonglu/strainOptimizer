@@ -11,6 +11,7 @@ from strainOptimizer.strainDesign.ecFactory import run_ecFactory
 # load model
 heme_yefl=load_model('examples/models/yeast/heme_cEFL.json', solver='optlang-gurobi',model_type='etfl')
 model=heme_yefl
+model.tolerence=1e-9
 
 
 # parameters for yefl siumlation
@@ -18,7 +19,7 @@ product_name='heme a'
 product_id='EX_heme_a'
 c_source="r_1714"      # glucose exchange rxn
 growth_id=model.growth_reaction.id     # biomass rxn
-c_uptake=1
+c_uptake=10
 gluc_MW=0.180156  # g/mmol
 model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
 model.objective=model.growth_reaction.id
@@ -33,13 +34,20 @@ modelParam['targetID']=product_id
 modelParam['c_source']=c_source
 modelParam['c_uptake']=c_uptake
 modelParam['productName']=product_name
+modelParam['model_type']='etfl'  # model type, 'ecGEM' or 'etfl'
 action_thresholds=[0.05,0.5,1.05]     # rules for overexpression, knockout and knockdown
 # set a timer
 import time
 start_time = time.time()
 print('start time:',start_time)
 # run ecFSEOF
-results=run_ecFactory.run_ecFactory_design(model=model, modelParam=modelParam, expYield=expYield,alphaLims=alphaLims,action_thresholds=action_thresholds,remove_essential=True,model_type='etfl')
+results=run_ecFactory.run_ecFactory_design(model=model,
+                                           modelParam=modelParam,
+                                           expYield=expYield,
+                                           alphaLims=alphaLims,
+                                           action_thresholds=action_thresholds,
+                                           remove_essential=True,
+                                           steps=1)
 end_time = time.time()
 print('end time:',end_time)
 print('time cost:',end_time-start_time)
@@ -72,13 +80,7 @@ for key in results.keys():
     # 检查是否为dict
     if isinstance(results[key],dict):
         results[key]=pd.Series(results[key])
-with pd.ExcelWriter(f'examples/result/yefl_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
+# with pd.ExcelWriter(f'examples/result/yefl_{product_name}_gluc_{c_uptake}_ecFactory_result.xlsx') as writer:
+with pd.ExcelWriter(f'examples/result/efl_{product_name}_gluc_{c_uptake}_ecFSEOF_result.xlsx') as writer:
     for key in results.keys():
         results[key].to_excel(writer, sheet_name=key)
-
-
-
-
-
-
-

@@ -6,7 +6,7 @@
 import pandas as pd
 from strainOptimizer.simulation import mopa,moma
 from strainOptimizer.io import load_model
-from strainOptimizer.simulation.pprotFBA import ppFBA2
+from strainOptimizer.simulation import ppFBA
 
 solver='optlang-gurobi'
 
@@ -25,14 +25,15 @@ prot_pool='prot_pool_exchange'
 
 # set wild type condition as the reference
 with model:
-    ref_sol=ppFBA2(model=model, targetID=growth, c_source=c_source, c_uptake=c_uptake, model_type='ecGEM')
-
+    ref_sol=ppFBA(model=model, targetID=growth, c_source=c_source, c_uptake=c_uptake, model_type='ecGEM')
+max_growth= ref_sol.fluxes[growth]
 
 with model:
     model.objective = product_id
     product=model.slim_optimize()*0.5
 mutant = model.copy()
 mutant.reactions.get_by_id(product_id).bounds = (product, float('inf'))
+mutant.reactions.get_by_id(growth).bounds = max_growth*0.1,max_growth*0.1
 
 # test MOPA
 sol = mopa(model=mutant,

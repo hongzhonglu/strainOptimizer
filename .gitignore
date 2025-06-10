@@ -38,3 +38,4 @@ data/yeast_thermo/compounds.sqlite
 /examples/result/
 /sclareol_cell_factory_design/
 /.vscode/
+/analysis_code/

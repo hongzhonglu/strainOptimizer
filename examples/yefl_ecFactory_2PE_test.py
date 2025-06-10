@@ -35,13 +35,14 @@ modelParam['targetID']=product_id
 modelParam['c_source']=c_source
 modelParam['c_uptake']=c_uptake
 modelParam['productName']=product_name
+modelParam['model_type']='etfl'  # model type, 'ecGEM' or 'etfl'
 action_thresholds=[0.05,0.5,1.05]     # rules for overexpression, knockout and knockdown
 # set a timer
 import time
 start_time = time.time()
 print('start time:',start_time)
 # run ecFSEOF
-results=run_ecFactory.run_ecFactory_design(model=model, modelParam=modelParam, expYield=expYield,alphaLims=alphaLims,action_thresholds=action_thresholds,remove_essential=True,model_type='etfl')
+results=run_ecFactory.run_ecFactory_design(model=model, modelParam=modelParam, expYield=expYield,alphaLims=alphaLims,action_thresholds=action_thresholds,remove_essential=True, steps=1)
 end_time = time.time()
 print('end time:',end_time)
 print('time cost:',end_time-start_time)
