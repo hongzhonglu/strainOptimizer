@@ -8,31 +8,46 @@ from strainOptimizer.simulation import ppFBA,moma,mopa,pFBA
 
 
 def k_matrix_filter(model, k_matrix, alpha, tol):
-    # filter1.Take out rxns with no grRule:
-    withGR = [rxn.id for rxn in model.reactions if rxn.gene_reaction_rule != '']
-    k_matrix = k_matrix.loc[withGR,:]
-
-    # filter2.remove out rxns that are always zero -> k=0/0=NaN:
-    # all_nanList = [rxn for rxn in k_matrix.index if np.all(np.isnan(k_matrix.loc[rxn, :]))]
-    all_nanList = k_matrix.apply(lambda x: np.all(pd.to_numeric(x, errors='coerce').isna()), axis=1)
-    print('there are %d reactions with all NaNs' % np.sum(all_nanList))
-    k_matrix = k_matrix.loc[~all_nanList]
-
-    # 3.Replace remaining NaNs with 1s:
-    # k_matrix[np.isnan(k_matrix)] = 1
+    """
+    Filter k_matrix to remove reactions with problematic patterns.
+    
+    Args:
+        model: Metabolic model
+        k_matrix (pd.DataFrame): Matrix with k-scores for reactions across alpha values
+        alpha (np.array): Array of alpha values used in FSEOF
+        tol (float): Tolerance threshold for filtering
+        
+    Returns:
+        pd.DataFrame: Filtered k_matrix
+    """
+    # Filter 1: Remove reactions without gene-reaction rules
+    reactions_with_gr = [rxn.id for rxn in model.reactions if rxn.gene_reaction_rule]
+    k_matrix = k_matrix.loc[reactions_with_gr, :]
+    
+    # Filter 2: Remove reactions with all NaN values (zero fluxes)
+    nan_mask = k_matrix.apply(lambda x: np.all(pd.to_numeric(x, errors='coerce').isna()), axis=1)
+    nan_count = np.sum(nan_mask)
+    print(f'Found {nan_count} reactions with all NaN values')
+    k_matrix = k_matrix.loc[~nan_mask]
+    
+    # Filter 3: Replace remaining NaN values with 1 (neutral effect)
     k_matrix = k_matrix.fillna(1)
-
-    # 4.Replace any Inf value with 1000:
-    k_matrix[np.abs(k_matrix) > 1000] = 1000
-
-    # filter5.Filter out values that are inconsistent at different alphas:
-    distinct_down = np.sum(k_matrix <= (1 - tol), axis=1) >= len(alpha)-2
-    distinct_up = np.sum(k_matrix >= (1 + tol), axis=1) >=  len(alpha)-2
-    # Identify those reactions with mixed patterns
-    incons_rxns = distinct_down + distinct_up == 0
-    print('there are %d reactions with mixed patterns' % np.sum(incons_rxns))
-    k_matrix = k_matrix.loc[incons_rxns[~incons_rxns].index.tolist(), :]
-
+    
+    # Filter 4: Cap extreme values to prevent numerical issues
+    k_matrix = k_matrix.clip(-1000, 1000)
+    
+    # Filter 5: Remove reactions with inconsistent patterns across alpha values
+    # A reaction is consistent if it's mostly up-regulated OR mostly down-regulated
+    down_regulated = np.sum(k_matrix <= (1 - tol), axis=1) >= len(alpha) - 2
+    up_regulated = np.sum(k_matrix >= (1 + tol), axis=1) >= len(alpha) - 2
+    
+    # Keep only reactions that show consistent regulation pattern
+    consistent_mask = down_regulated | up_regulated
+    inconsistent_count = np.sum(~consistent_mask)
+    print(f'Found {inconsistent_count} reactions with inconsistent patterns')
+    
+    k_matrix = k_matrix.loc[consistent_mask]
+    
     return k_matrix
 
 
@@ -183,17 +198,28 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
         v_matrix[alpha[i]] = FC['flux_MUT']
         k_matrix[alpha[i]] = FC['flux_MUT'] / FC['flux_WT']
 
-    # step 2: calculate reactions k scores
-    # filter rxns according to k_matrix
+    # Step 2: Calculate reaction k-scores and apply filtering
+    # Filter reactions based on k_matrix patterns
     k_matrix_filtered = k_matrix_filter(model, k_matrix, alpha, tol)
-    v_matrix_filtered = v_matrix.loc[k_matrix_filtered.index.tolist(), :]
+    v_matrix_filtered = v_matrix.loc[k_matrix_filtered.index, :]
+    
+    # Store filtered matrices in FC dictionary
     FC["v_matrix"] = v_matrix_filtered
     FC["k_matrix"] = k_matrix_filtered
     FC["rxns"] = k_matrix_filtered.index.tolist()
-    # get median k_score for target rxn
-    k_rxns=pd.Series(np.mean(k_matrix_filtered, axis=1),index=k_matrix_filtered.index.tolist())
+    
+    # Calculate mean k-score for each reaction across alpha values
+    k_rxns = pd.Series(np.mean(k_matrix_filtered.abs(), axis=1), 
+                      index=k_matrix_filtered.index)
+    
+    # Filter out reactions with very low mean flux (< 1e-8)
+    flux_threshold = 1e-8
+    mean_flux_rxns = pd.Series(np.mean(v_matrix_filtered.abs(), axis=1), 
+                              index=v_matrix_filtered.index)
+    k_rxns = k_rxns[mean_flux_rxns > flux_threshold]
+
     FC["k_rxns"] = k_rxns
-    # Order from highest to lowest median k_score (across alphas)
+    # Order from highest to lowest median k_scor
     order = np.argsort(FC["k_rxns"])[::-1]
     FC["k_rxns"] = FC["k_rxns"][order]
     FC["rxns"] = FC['k_rxns'].index.tolist()
