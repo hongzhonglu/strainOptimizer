@@ -4,7 +4,7 @@ from strainOptimizer.analysis import prepare_metabolic_solution_for_etfl, prepar
 
 def pFBA(model, targetID, c_source, c_uptake, model_type='etfl', direction='max'):
     with model:
-        if model_type not in ['etfl', 'ecGEM', 'GEM']:
+        if model_type not in ['etfl', 'ecGEM', 'GEM', 'GAN_ec']:
             raise ValueError('model_type should be either "etfl" or "ecGEM"')
         if c_uptake is None:
             c_uptake = 1
@@ -18,7 +18,9 @@ def pFBA(model, targetID, c_source, c_uptake, model_type='etfl', direction='max'
         elif model_type == 'GEM':
             model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
             met_rxnList=[rxn for rxn in model.reactions]
-
+        elif model_type == 'GAN_ec':
+            model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
+            met_rxnList=[rxn for rxn in model.reactions if rxn.id.startswith('r_')]
 
         model.objective = targetID
         model.objective_direction = direction

@@ -29,7 +29,7 @@ def moma(model, reference_solution, linear: bool = True,model_type='ecGEM'):
             if model_type=='etfl':
                 reference_fluxes= prepare_metabolic_solution_for_etfl(reference_solution)
                 add_moma_etfl(model=model, reference_fluxes=reference_fluxes, linear=linear)
-            elif model_type=='ecGEM':
+            elif model_type=='ecGEM' or model_type=='GAN_ec':
                 reference_fluxes= prepare_metabolic_solution_for_ec(reference_solution)
                 add_moma_ecGEM(model=model, reference_fluxes=reference_fluxes, linear=linear)
             else:

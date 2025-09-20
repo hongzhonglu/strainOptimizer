@@ -32,6 +32,8 @@ def ppFBA(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
         model.reactions.get_by_id(c_source).bounds = -c_uptake , -c_uptake
     elif model_type=='ecGEM':
         model.reactions.get_by_id(c_source).bounds = c_uptake, c_uptake
+    elif model_type=='GAN_ec':
+        model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
     # 1.set the target objective
     model.reactions.get_by_id(targetID).bounds = 0, 1000
     model.objective = targetID
@@ -51,7 +53,7 @@ def ppFBA(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
             model.objective_direction = 'max'
             sol2 = model.optimize()
         # for ecGEM model: minimize protein pool pseudo rxn
-        elif model_type=='ecGEM':
+        elif model_type=='ecGEM' or model_type=='GAN_ec':
             prot_pool_rxnID='prot_pool_exchange'
             model.objective = prot_pool_rxnID
             model.objective_direction = 'min'
@@ -65,6 +67,10 @@ def ppFBA(model, targetID,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01):
         model.objective= model.growth_reaction.id
         model.objective_direction = 'max'
     elif model_type=='ecGEM':
+        model.reactions.get_by_id(targetID).bounds = 0, 1000
+        model.objective = 'r_2111'
+        model.objective_direction = 'max'
+    elif model_type=='GAN_ec':
         model.reactions.get_by_id(targetID).bounds = 0, 1000
         model.objective = 'r_2111'
         model.objective_direction = 'max'

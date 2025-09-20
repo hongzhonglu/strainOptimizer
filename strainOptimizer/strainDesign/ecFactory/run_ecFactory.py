@@ -46,10 +46,18 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     except:
         simulation_method = 'ppfba'  # default simulation method is ppfba
 
-    if model_type=='etfl':
-        growth_rxnID = model.growth_reaction.id
-    elif model_type=='ecGEM':
-        growth_rxnID = 'r_2111'
+    try:
+        growth_rxnID = modelParam['growth_rxnID']
+    except:
+        if model_type=='etfl':
+            growth_rxnID = model.growth_reaction.id
+        elif model_type=='ecGEM':
+            growth_rxnID = 'r_2111'
+        elif model_type=='GAN_ec':
+            growth_rxnID = 'r_2111'
+        else:
+            print('Error! Please provide the growth reaction ID!')
+            return None
 
     try:
         substrate_MW=modelParam['substrate_MW']  # g/mmol
@@ -61,7 +69,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
 
     # 1.- Run FSEOF to find gene candidates
     # Parameters for FSEOF method
-    Nsteps = 10  # number of FBA steps in ecFSEOF
+    Nsteps = 8  # number of FBA steps in ecFSEOF
     step = step + 1
     print(f'{step}.-  **** Running ecFSEOF method (ref: GECKO utilities) ****')
     results = ecfseof.run_ecFSEOF(model=model,
@@ -136,6 +144,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     print(str(step) + '.1-  **** Running EUVA for optimal production conditions ****')
     # Fix suboptimal experimental biomass yield conditions
     fix_gr = expYield * substrate_MW* c_uptake
+    fix_gr=round(fix_gr,2)
     model.reactions.get_by_id(growth_rxnID).bounds = fix_gr, fix_gr
     print(' Fix suboptimal experimental biomass = ' + str(fix_gr) + ' h-1')
 
@@ -153,6 +162,8 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
         optm_fraction=1.01
         # calculate the total enzymes amount(exclude dummy enzyme)
         total_enzymes=prod_ppFBA_allprotconc.drop('dummy_enzyme',axis=0).sum()*optm_fraction
+        # 保留小数
+        total_enzymes=round(total_enzymes, 5)
         print('  - Fix total enzymes amount to %s g/gDW'%total_enzymes)
         model=constrain_enzymes(model,total_enzymes,model_type=model_type)
 
@@ -312,6 +323,8 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     if l1_targets_numb>30:
         selection_range=[1]
     elif l1_targets_numb+l2_targets_numb>30:
+        selection_range=[1,2]
+    elif l1_targets_numb+l2_targets_numb+l3_targets_numb>30:
         selection_range=[1,2]
     else:
         selection_range=[1,2,3]

@@ -26,7 +26,7 @@ def mopa(model, reference_solution, linear: bool = True,model_type='ecGEM',show=
         if model_type=='etfl':
             reference_prots= prepare_prot_solution_for_etfl(reference_solution)
             add_mopa_etfl(model=model, reference_prots=reference_prots, linear=linear)
-        elif model_type=='ecGEM':
+        elif model_type=='ecGEM' or model_type=='GAN_ec':
             reference_prots= prepare_prot_solution_for_ec(reference_solution)
             add_mopa_ecGEM(model=model, reference_prots=reference_prots, linear=linear)
         else:

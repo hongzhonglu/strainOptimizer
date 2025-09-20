@@ -79,7 +79,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
     """
 
     # check model_type
-    if model_type not in ['etfl', 'ecGEM']:
+    if model_type not in ['etfl', 'ecGEM','GAN_ec']:
         raise ValueError('model_type should be either "etfl" or "ecGEM"')
     if filterG is None:
         filterG = False
@@ -96,6 +96,8 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
     if model_type == 'etfl':
         gr_rxnID = model.growth_reaction.id
     elif model_type == 'ecGEM':
+        gr_rxnID = 'r_2111'
+    elif model_type == 'GAN_ec':
         gr_rxnID = 'r_2111'
     # check if model has transcriptome attribute
     if hasattr(model, 'transcriptome'):
@@ -161,6 +163,8 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
                     model.reactions.get_by_id(c_source).bounds = -c_uptake, 0
                 elif model_type == 'ecGEM':
                     model.reactions.get_by_id(c_source).bounds = 0, c_uptake
+                elif model_type == 'GAN_ec':
+                    model.reactions.get_by_id(c_source).bounds = -c_uptake, 0
                 # 1.set the target objective
                 model.reactions.get_by_id(targetID).bounds = 0, 1000
                 model.objective = targetID
@@ -178,6 +182,9 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
                     model.reactions.get_by_id(c_source).bounds = -c_uptake,0
                 elif model_type == 'ecGEM':
                     model.reactions.get_by_id(c_source).bounds = 0, c_uptake
+                elif model_type == 'GAN_ec':
+                    model.reactions.get_by_id(c_source).bounds = -c_uptake, 0
+
                 # 1.set the target objective
                 model.reactions.get_by_id(targetID).bounds = 0, 1000
                 model.objective = targetID

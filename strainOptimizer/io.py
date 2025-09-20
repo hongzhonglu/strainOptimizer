@@ -36,7 +36,7 @@ def load_model(filename:str , model_type: ['etfl','ecGEM','gem'] ,solver=None):
         return:
             model: ecModel/ETFL model
             '''
-    if model_type=='ecGEM':
+    if model_type=='ecGEM' or model_type=='GAN_ec':
         model=load_ecmodel(filename)
     elif model_type=='etfl':
         model=load_etfl_model(filename,solver=solver)

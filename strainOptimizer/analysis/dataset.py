@@ -42,10 +42,12 @@ def calculate_exp_consistency(predict_result, exp_data, show=True):
                                 'exp_num': len(exp_geneList), 'hit_num': len(hit_geneList),
                                 'consistency': len(set(exp_geneList).intersection(set(hit_geneList))) / len(
                                     exp_geneList)}
+    if overall_predict_num==0:
+        return None
     exp_consistency['overall'] = {'exp_num': overall_exp_num, 'hit_num': overall_hit_num,
                                   'predict_num': overall_predict_num,
                                   'consistency': overall_hit_num / overall_exp_num,
-                                  'accuracy': overall_hit_num / overall_predict_num}
+                                  'precision': overall_hit_num / overall_predict_num}
 
     if show==True:
         for key in exp_consistency.keys():
