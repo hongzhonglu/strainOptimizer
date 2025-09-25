@@ -6,7 +6,9 @@ from strainOptimizer.io import load_model
 
 # load model
 # model=load_model(filename='examples/models/yeast/ecYeastGEM_batch.xml',model_type='ecGEM')
-model=load_model(filename='examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json',model_type='etfl')
+# model=load_model(filename='examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json',model_type='etfl')
+# model=load_model(filename='examples/models/yeast/yeast-GEM.xml',model_type='gem')
+model=load_model(filename='examples/models/yeast/GAN_ecYeast/GAN_all_v2.xml',model_type='ecGEM')
 
 # build non-exist metabolite
 ggdp_c=cobra.Metabolite('ggdp_c',formula='C20H33O7P2',name='Geranylgeranyl diphosphate',compartment='c')
@@ -70,7 +72,7 @@ with model:
     print(model.slim_optimize())
 
 # save model
-# cobra.io.write_sbml_model(model,'examples/models/yeast/ecYeastGEM_sclareol_batch.xml')
+cobra.io.write_sbml_model(model,'examples/models/yeast/GAN_ecYeast/sclareol_GAN_all_v2.xml')
 
-from etfl.io.json import save_json_model
-save_json_model(model,'examples/models/yeast/cEFL_sclareol.json')
+# from etfl.io.json import save_json_model
+# save_json_model(model,'examples/models/yeast/cEFL_sclareol.json')

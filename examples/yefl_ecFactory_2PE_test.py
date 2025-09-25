@@ -36,13 +36,19 @@ modelParam['c_source']=c_source
 modelParam['c_uptake']=c_uptake
 modelParam['productName']=product_name
 modelParam['model_type']='etfl'  # model type, 'ecGEM' or 'etfl'
-action_thresholds=[0.05,0.5,1.05]     # rules for overexpression, knockout and knockdown
+action_thresholds=[0.05,0.2,1.1]     # rules for overexpression, knockout and knockdown
 # set a timer
 import time
 start_time = time.time()
 print('start time:',start_time)
 # run ecFSEOF
-results=run_ecFactory.run_ecFactory_design(model=model, modelParam=modelParam, expYield=expYield,alphaLims=alphaLims,action_thresholds=action_thresholds,remove_essential=True, steps=1)
+results=run_ecFactory.run_ecFactory_design(model=model,
+                                           modelParam=modelParam,
+                                           expYield=expYield,
+                                           alphaLims=alphaLims,
+                                           action_thresholds=action_thresholds,
+                                           remove_essential=True,
+                                           steps=123)
 end_time = time.time()
 print('end time:',end_time)
 print('time cost:',end_time-start_time)
@@ -50,9 +56,9 @@ print('time cost:',end_time-start_time)
 # print FSEOF results
 print('FSEOF results:')
 genetable=results['geneTable']
-print('OE:',genetable[genetable['actions']=='OE'].shape[0])
-print('KD:',genetable[genetable['actions']=='KD'].shape[0])
-print('KO:',genetable[genetable['actions']=='KO'].shape[0])
+print('OE:',genetable[genetable['action']=='OE'].shape[0])
+print('KD:',genetable[genetable['action']=='KD'].shape[0])
+print('KO:',genetable[genetable['action']=='KO'].shape[0])
 
 # EUVA results
 print('EUVA results:')

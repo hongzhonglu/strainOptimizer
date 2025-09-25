@@ -2,10 +2,17 @@
 from strainOptimizer.io import load_model
 
 # load model
-model=load_model('examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json', solver='optlang-gurobi',model_type='etfl')
+# model=load_model('examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json', solver='optlang-gurobi',model_type='etfl')
+# model=load_model(filename='examples/models/yeast/yeast-GEM.xml',model_type='gem')
+model=load_model(filename='examples/models/yeast/GAN_ecYeast/GAN_all_v2.xml',model_type='ecGEM')
 
-heme_metID='s_0811_c'
-heme_met=model.metabolites.get_by_id(heme_metID)
+try:
+    heme_metID='s_0811_c' # for ETFL model
+    heme_met=model.metabolites.get_by_id(heme_metID)
+except:
+    heme_metID = 's_0811[m]' # for yeast-GEM 9 model
+    heme_met = model.metabolites.get_by_id(heme_metID)
+
 
 # add heme a demand reaction to simulate heme a production
 from cobra import Reaction
@@ -30,5 +37,8 @@ model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
 sol=model.optimize()
 
 # save the model
-from etfl.io.json import save_json_model
-save_json_model(model,'examples/models/yeast/heme_cEFL.json')
+# from etfl.io.json import save_json_model
+# save_json_model(model,'examples/models/yeast/heme_cEFL.json')
+
+import cobra
+cobra.io.write_sbml_model(model,'examples/models/yeast/GAN_ecYeast/heme_GAN_all_v2.xml')
