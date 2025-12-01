@@ -1,0 +1,165 @@
+compartment,min,max
+nucleus,0.0460104801275655,0.1181192654730724
+mitochondrion,0.2081742197446269,0.4543426119303611
+membrane,0.03425563217181576,0.08873475372198077
+bounding membrane of organelle,0.0,0.0
+Golgi stack,0.0,1.546135207042608e-06
+Golgi apparatus,0.000973179515506893,0.003538710055171738
+endosome,0.0005997191211775745,0.001972552810133651
+late endosome,4.230433656089757e-05,0.0001755248028108832
+cytosol,0.0932724483131493,0.1804298621559011
+cytoplasm,0.2010354339200809,0.37460453011574
+plasma membrane,0.003768490296483149,0.05758041301437686
+fungal-type vacuole membrane,0.005641222485887442,0.01244811705628478
+extracellular region,0.0007223583006035804,0.008470538013807864
+fungal-type cell wall,0.000850140971705804,0.006730595045747911
+endoplasmic reticulum membrane,0.00516308768188374,0.02184195552113052
+endoplasmic reticulum,0.007299334300581696,0.03386137058303281
+endoplasmic reticulum-Golgi intermediate compartment,0.0,0.0
+COPII-coated ER to Golgi transport vesicle,0.0,0.0002419252958714935
+mitochondrial outer membrane,0.002173053867883745,0.01281308030984773
+nuclear membrane,6.629347343807726e-06,4.808747909838681e-05
+nucleoplasm,0.0,0.0
+endomembrane system,0.001459744349545964,0.00450110731245868
+endosome membrane,0.0006227684034420996,0.002003718664333574
+cellular bud neck,0.0006442123273150863,0.004991060910982861
+cellular bud tip,0.0005508331208739889,0.004493914999467482
+mating projection tip,0.004768267735239369,0.02243909484498249
+ascospore wall,0.0,0.0
+spore wall,0.0,0.0
+prospore membrane,1.742529334651481e-05,0.0003660883454291489
+lipid droplet,0.007901374571257214,0.07399419909407887
+chromosome,1.835190824124722e-05,6.16746686905434e-05
+"chromosome, centromeric region",0.0,0.0
+"chromosome, telomeric region",0.0001458980746871215,0.0005328467881516744
+P-body,0.0,4.843401913085852e-06
+cellular bud,0.0005508331208739889,0.004493914999467482
+nucleolus,0.0008904397922406212,0.003207925829796551
+trans-Golgi network,2.482444716156482e-05,0.0001043294690572237
+vesicle,0.0,0.0
+cell periphery,0.005640790032500338,0.05260660657481384
+U2-type catalytic step 1 spliceosome,0.0,0.0
+U2-type catalytic step 2 spliceosome,0.0,0.0
+cytoskeleton,3.807827437957462e-05,0.0001276073649645276
+kinetochore,0.0,0.0
+cytoplasmic stress granule,0.006697529393033836,0.01860076878816333
+peroxisome,0.002874361753279942,0.05689408494120854
+mitochondrial inner membrane,0.01669788646149679,0.1914693551528703
+mitochondrial intermembrane space,0.008918131648829436,0.0277971320273324
+incipient cellular bud site,0.0001029643334495229,0.000991173171698434
+Golgi membrane,0.0004198992151059035,0.001407776343207464
+mitochondrial matrix,0.01555047752044258,0.1564135882090834
+mitochondria-associated endoplasmic reticulum membrane,0.0,0.0
+peroxisomal membrane,0.0007164774662620191,0.02406817890177719
+side of membrane,3.651895061648749e-05,0.0004540003945016191
+nuclear pore,0.0,0.0
+nuclear pore central transport channel,0.0,0.0
+nuclear pore nuclear basket,0.0,0.0
+condensed nuclear chromosome,0.0,0.0
+microtubule cytoskeleton,0.0,0.0
+cell tip,0.0,0.0
+nuclear envelope,0.0001003909157165443,0.0004032295587105589
+vacuolar membrane,0.005124271270561252,0.01127302917488415
+vacuole,0.006570586440766007,0.01488678861706623
+cytoplasmic vesicle,0.0001823620889145066,0.0007190483691622812
+ER to Golgi transport vesicle membrane,0.0,0.0
+COPI-coated vesicle membrane,0.0,0.0
+Golgi trans cisterna,0.0,0.0
+nuclear outer membrane,0.0,0.0
+early endosome,4.103250234502738e-06,1.750676148843939e-05
+nucleus-vacuole junction,2.310143219114338e-06,2.451819229179321e-05
+perinuclear endoplasmic reticulum,3.145604611867818e-05,0.0001261936538325653
+nucleosome,0.0,1.731624778696283e-06
+90S preribosome,0.0,0.0
+cell cortex,7.74255242497905e-05,0.0002330145350733426
+chromatin,1.829746269963535e-05,0.0004391856340300425
+periplasmic space,0.0001014989877166193,0.001613596893999728
+fungal-type vacuole,0.008449837356737488,0.05436258208510195
+precatalytic spliceosome,0.0,0.0
+catalytic step 2 spliceosome,0.0,0.0
+ribosome,3.950202435618464e-05,0.0004502799296844886
+intracellular organelle,0.0,0.0
+cytoplasmic microtubule,0.0,0.0
+microtubule,3.935794154089281e-05,0.0002629287901591731
+microtubule organizing center,0.0,0.0
+clathrin-coated pit,0.0,0.0
+membrane coat,0.0,0.0
+cis-Golgi network,0.0001018558459950497,0.0002922449399616689
+respirasome,0.001325885728796753,0.04013723428616257
+mitochondrial membrane,0.002304922471723581,0.02135466979554107
+membrane raft,0.003519651297992027,0.01280162747094373
+late endosome membrane,9.294757770571316e-06,4.569397217824412e-05
+phagophore assembly site,1.043044222695704e-05,0.001599893508198991
+autophagosome membrane,7.74255242497905e-05,0.0002330145350733426
+vacuole-isolation membrane contact site,3.921772638346377e-06,0.001595703126629465
+nuclear periphery,0.001322725375617688,0.01145881928856761
+site of polarized growth,1.910400634190858e-05,0.0002517602741786475
+mitochondrial nucleoid,0.00697242160027631,0.07371562619141254
+intracellular membrane-bounded organelle,0.0005784086681025049,0.004277315218652747
+cell division site,0.0,0.0
+cellular bud membrane,0.0,6.737574034591748e-06
+eisosome,0.001521399942940261,0.01119833469308007
+cytoplasmic vesicle membrane,5.423520384790383e-06,5.168398095721537e-05
+cell septum,1.315701279383327e-05,0.000105907410376833
+transport vesicle,0.0001222079778777519,0.0006649616418492701
+cytoplasmic side of plasma membrane,0.004970073238649781,0.03309993827087542
+cell surface,0.0003520134637030839,0.004458812341579193
+nuclear outer membrane-endoplasmic reticulum membrane network,0.0003741292541213793,0.001351575953288401
+cortical endoplasmic reticulum,0.0001092784583653317,0.0002781304487280425
+replication fork,0.0,0.0
+cell wall-bounded periplasmic space,0.0,0.0002115809900228083
+exocyst,0.0,0.0
+U2-type prespliceosome,0.0,0.0
+mitochondrial ribosome,6.427926876866258e-06,5.109434814866475e-05
+"vacuolar proton-transporting V-type ATPase, V1 domain",0.002785730719648741,0.007533543046695962
+vacuole-mitochondrion membrane contact site,0.0005096315714075546,0.0013534398599774
+phagophore assembly site membrane,2.295483243380304e-06,0.00159723175259413
+cellular bud neck septin ring,0.0,0.0
+cellular bud neck septin collar,0.0,0.0
+vacuolar lumen,0.0,1.980732374734011e-06
+fungal-type vacuole lumen,0.0,0.0002419252958714935
+intracellular non-membrane-bounded organelle,0.0,0.0
+perinuclear region of cytoplasm,6.047168611190261e-06,2.863016761141994e-05
+Golgi medial cisterna,7.319774376759001e-05,0.0001800227304575108
+peroxisomal matrix,0.0004542077248766093,0.04273090607701038
+endoplasmic reticulum lumen,2.61950258609815e-05,0.0006545538293329855
+mitochondrial crista junction,0.0,0.0
+site of double-strand break,0.0,0.0
+euchromatin,0.0,0.0
+nuclear chromosome,0.0,0.0
+cellular bud neck contractile ring,0.0,0.0
+septin ring,0.0,0.0
+nuclear replication fork,0.0,0.0
+mating projection base,0.0,0.0
+mating projection,0.0,0.0
+endocytic vesicle,0.0,0.0
+extracellular space,6.300373729268184e-06,3.735239590511558e-05
+Golgi cis cisterna,1.789029557441681e-07,1.353981753553881e-06
+"vacuolar proton-transporting V-type ATPase, V0 domain",0.0004011066578624158,0.001684387023750096
+cytosolic ribosome,4.136102726359585e-05,0.0001903522365500183
+COPI vesicle coat,0.0,0.0
+polarisome,0.0,0.0
+clathrin-coated vesicle membrane,0.0,0.0
+early endosome membrane,0.0,0.0
+"condensed chromosome, centromeric region",0.0,0.0
+proteasome storage granule,0.0,0.0
+COPII vesicle coat,0.0,0.0
+endoplasmic reticulum exit site,0.0,0.0
+cellular bud scar,0.0,3.712845670707613e-05
+cell cortex of cell tip,0.0,0.0
+clathrin-coated vesicle,0.0,0.0
+endoplasmic reticulum tubular network,0.0,0.0
+rDNA heterochromatin,0.0,0.0
+nuclear inner membrane,1.172559868360376e-05,6.189913749152271e-05
+COP9 signalosome,0.0,0.0
+membrane-bounded organelle,4.103250234502738e-06,1.750676148843939e-05
+nuclear pore cytoplasmic filaments,0.0,0.0
+multivesicular body,0.0,0.0002419252958714935
+nuclear pore outer ring,0.0,0.0
+"signal recognition particle, endoplasmic reticulum targeting",0.0,0.0
+phagophore,2.161984837415219e-06,7.252710027257681e-06
+clathrin vesicle coat,0.0,0.0
+matrix side of mitochondrial inner membrane,0.0,0.0
+mitochondrial envelope,9.544661999557911e-05,0.00361812842031269
+cellular bud neck split septin rings,0.0,0.0
+mitochondrion_unassigned,0.09412891719368706,0.2339003539280657

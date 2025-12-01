@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-# date : 2024/8/30 
-# author : wangh
-# file : model_growth_simulation.py
-# project : strainOptimizer
 from strainOptimizer.io import load_model
 import os
 import pandas as pd

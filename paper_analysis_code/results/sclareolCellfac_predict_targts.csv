@@ -1,0 +1,75 @@
+,geneName,pathway,action,ecYeast_glucose,ecYeast_ethanol,efl_glucose,efl_ethanol,essential,FCCg,FCCp,filter_out,select
+YLL053C,YLL053C,Transporter,KD,False,False,True,False,False,,,False,False
+YPR058W,YMC1,Transporter,KD,False,False,True,False,False,,,False,False
+YJR095W,SFC1,Transporter,KD,False,False,True,False,False,,,False,False
+YBR085W,AAC3,Transporter,KD,True,False,False,False,False,,,False,False
+YCR098C,GIT1,Transporter,KD,False,False,True,False,False,,,False,False
+YBL030C,PET9,Transporter,KD,True,False,False,False,False,,,False,False
+YBR291C,CTP1,Transporter,KD,False,False,True,False,False,,,False,False
+YMR056C,AAC1,Transporter,KD,True,False,False,False,False,,,False,False
+YDR508C,GNP1,Transporter,KD,False,False,True,False,False,,,False,False
+YNR001C,CIT1,TCA cycle,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YOR136W,IDH2,TCA cycle,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YNL037C,IDH1,TCA cycle,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YGR157W,CHO2,Lipid metabolism,KD,True,True,False,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YPL117C,IDI1,Terpenoid biosynthesis,OE,True,True,True,True,True,1.387778780781446e-16,0.0,False,True
+YLR393W,ATP10,Oxidative phosphorylation,KD,True,False,False,False,unknown,,,False,False
+YPL262W,FUM1,TCA cycle,KD,False,False,True,False,False,0.0,-2.689319721047409e-16,False,False
+YOR175C,ALE1,Lipid metabolism,KD,True,True,True,True,False,-0.04298908412417049,-6.24800905123212e-08,False,True
+YJR051W,OSM1,Others,KD,False,False,True,False,False,0.0,0.0,False,False
+YDR019C,GCV1,One carbon metabolism,KD,False,False,True,False,False,-0.01240171188897299,-1.80245654430905e-08,False,False
+YMR313C,TGL3,Lipid metabolism,KD,True,True,False,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,True
+YCR010C,ADY2,Transporter,KD,True,True,False,False,False,,,False,False
+YLR058C,SHM2,One carbon metabolism,KD,False,False,True,False,False,0.0,0.0,False,True
+YAL044C,GCV3,One carbon metabolism,KD,False,False,True,False,False,-0.01240174369931651,-1.80246115649237e-08,False,True
+YMR189W,GCV2,One carbon metabolism,KD,False,False,True,False,False,-0.01243598891475947,-1.80743832083991e-08,False,False
+YLR450W,HMG2,Terpenoid biosynthesis,OE,True,True,True,True,False,-0.4950636088300258,9.59363513054644e-07,False,False
+YBR263W,SHM1,One carbon metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YHR144C,DCD1,Nucleotides metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YBR252W,DUT1,Nucleotides metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YKL067W,YNK1,Nucleotides metabolism,OE,False,False,True,False,True,-1.387778780781446e-16,0.0,False,False
+YJL167W,ERG20,Terpenoid biosynthesis,OE,True,True,True,True,True,-0.527812660493772,1.13232972772026,False,False
+YMR208W,ERG12,Terpenoid biosynthesis,OE,True,True,True,True,True,-0.5053516885965675,1.099247263145546,False,False
+YMR220W,ERG8,Terpenoid biosynthesis,OE,True,True,True,True,True,-0.5053514819056919,1.099247263145245,False,False
+YGR202C,PCT1,Lipid metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YMR246W,FAA4,Lipid metabolism,KD,False,False,True,True,False,-1.387778780781446e-16,0.0,False,False
+SsLPPS,,Terpenoid biosynthesis,OE,True,True,True,True,unknown,,,False,False
+YOR317W,FAA1,Lipid metabolism,KD,False,False,True,True,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YLR133W,CKI1,Lipid metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YPR140W,TAZ1,Lipid metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YNL315C,ATP11,Oxidative phosphorylation,KD,True,False,False,False,unknown,,,False,False
+YDR503C,LPP1,Lipid metabolism,KD,False,False,True,False,False,0.0,-2.689319721047409e-16,False,False
+YCL005W-A,VMA9,Oxidative phosphorylation,KD,True,False,False,False,False,,,False,False
+YMR267W,PPA2,Oxidative phosphorylation,KD,True,False,False,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YHR123W,EPT1,Lipid metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YNL130C,CPT1,Lipid metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YML126C,ERG13,Terpenoid biosynthesis,OE,True,True,True,True,True,-0.4950636088300253,9.59363513054644e-07,False,True
+YLR153C,ACS2,Ethanol metabolism,OE,False,True,False,True,False,-0.03839580506043008,5.580428257898654e-08,False,True
+YMR008C,PLB1,Lipid metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YPL110C,GDE1,Lipid metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YNR019W,ARE2,Lipid metabolism,KD,True,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+SsTPS,,Terpenoid biosynthesis,OE,True,True,True,True,unknown,,,False,False
+YJL180C,ATP12,Oxidative phosphorylation,KD,True,False,False,False,unknown,,,False,False
+YER065C,ICL1,Glyoxylate metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YNL169C,PSD1,Lipid metabolism,KD,True,False,False,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YBR204C,LDH1,Lipid metabolism,KD,True,False,False,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YPL028W,ERG10,Terpenoid biosynthesis,OE,True,True,True,True,False,0.0,1.344659860523704e-16,False,False
+YJR009C,TDH2,Glycolysis / gluconeogenesis,OE,False,False,True,False,False,0.0,0.0,False,False
+YCR048W,ARE1,Lipid metabolism,KD,True,False,True,False,False,-1.387778780781446e-16,-1.344659860523704e-16,False,False
+YJL052W,TDH1,Glycolysis / gluconeogenesis,OE,False,False,True,False,False,4.163336342344337e-16,0.0,False,False
+YJR049C,UTR1,Cofactors metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YPL061W,ALD6,Ethanol metabolism,OE,False,True,False,False,False,-0.271396062512497,3.944454946464513e-07,False,True
+YML082W,YML082W,Amino acids metabolism,KD,False,False,True,True,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YOL086C,ADH1,Ethanol metabolism,OE,True,False,False,False,False,0.0,0.0,False,False
+YOR222W,ODC2,Amino acids metabolism,KD,True,False,False,False,False,,,False,False
+YPL134C,ODC1,Amino acids metabolism,KD,True,False,False,False,False,,,False,True
+YFL030W,AGX1,Amino acids metabolism,KD,False,False,True,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+FRTT,,Terpenoid biosynthesis,OE,True,True,True,True,unknown,,,False,False
+YDL052C,SLC1,Lipid metabolism,KD,True,True,False,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,True
+YAL012W,CYS3,Amino acids metabolism,KD,False,False,True,True,False,0.0,0.0,False,False
+YKR089C,TGL4,Lipid metabolism,KD,True,True,False,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YJR130C,STR2,Amino acids metabolism,KD,False,False,True,True,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YOR081C,TGL5,Lipid metabolism,KD,True,True,False,False,False,-1.387778780781446e-16,-2.689319721047409e-16,False,False
+YNR043W,MVD1,Terpenoid biosynthesis,OE,True,True,True,True,True,-0.5053514874095458,1.099247263145254,False,False
+YHR002W,LEU5,Cofactors metabolism,OE,True,False,True,False,False,,,False,True
+YDL066W,IDP1,Amino acids metabolism,KD,True,False,False,False,False,-0.02368726165409132,0.0,False,True
