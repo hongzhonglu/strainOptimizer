@@ -1,106 +1,126 @@
 # -*- coding: utf-8 -*-
 import sys
+import copy
 # sys.path.append(r"D:\code\github\etfl\code_etfl\strainOptimizer\ecFactory")
 import pandas as pd
 from strainOptimizer.strainDesign.ecFactory import ecfseof
-from strainOptimizer.strainDesign.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR
+from strainOptimizer.strainDesign.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR,default_scanning_range
 from strainOptimizer.analysis.enzyme_variety_analysis import enzymeVA
 from strainOptimizer.strainDesign.ecFactory import find_min_sets
 from strainOptimizer.manipulation.constraint.total_resource_allocation import constrain_enzymes
 from strainOptimizer.simulation.pprotFBA import pprotFBA_prot_conc
+from strainOptimizer.analysis.network import calculate_genetic_target_distance,count_adjacent_reactions_from_gene
+from strainOptimizer.analysis.FCC import calculate_FCC_by_abundance
+from strainOptimizer.io import load_model
+import pickle
 
-def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds=[0.05,0.5,1.05],remove_essential=False,steps=123):
-    '''
-    This function runs ecFactory method to identify gene targets for strain design
-    * Args:
-    model: ETFL/ecGEM model
-    modelParam: a pandas series with the following parameters:
-        targetID: target reaction ID
-        productName: product name(used to find the leak reactions)
-        c_source: carbon source exchange reaction ID
-        c_uptake: carbon source uptake rate
-    expYield: experimental yield of the biomass growth
-    action_thresholds: a list of three thresholds for gene targets:
-        1. KO threshold
-        2. KD threshold
-        3. OE threshold
-    remove_essential: a boolean value indicating whether to remove essential genes from the list of targets
-    model_type: a string indicating the type of model ('etfl' or 'ecGEM')
+# def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds=[0.05,0.5,1.05],remove_essential=False,steps=123):
+def run_ecFactory_design(model, parameters):
+    """
+    Run ecFactory method to identify gene targets for strain design.
+    
+    The ecFactory algorithm analyzes enzyme usage variability to identify potential
+    genetic engineering targets for metabolic strain optimization. It considers
+    experimental yield constraints and applies thresholds to classify targets as
+    knockout (KO), knockdown (KD), or overexpression (OE) candidates.
+    
+    Args:
+        model: ETFL/ecGEM metabolic model object
+        parameters: WorkflowParameters object containing three parameter dictionaries:
+            - model: Model-specific parameters
+                * model_type: Type of model ('etfl', 'ecGEM', etc.)
+                * growth_id: Growth/biomass reaction ID
 
-    * Return:
-    results: a dictionary with the following keys:
-        geneTable: a pandas dataframe with the following columns:
-            geneID: gene ID
-            k_score: k-score value
-            action: gene action
-            minimal candidates set: a boolean value indicating whether the gene is in the minimal candidates set
-    '''
-    # model parameters
-    targetID = modelParam['targetID']
-    productName = modelParam['productName']
-    c_source = modelParam['c_source']
-    c_uptake = modelParam['c_uptake']
-    model_type = modelParam['model_type']
-    try:
-        simulation_method = modelParam['simulation_method']
-    except:
-        simulation_method = 'ppfba'  # default simulation method is ppfba
+            - strain: Strain-specific parameters
+                * target_id: Target reaction ID for product synthesis
+                * product_name: Product name (used to identify leak reactions)
+                * c_source: Carbon source exchange reaction ID
+                * c_uptake: Carbon source uptake rate (mmol/gDW/h)
+                * substrate_MW: Substrate molecular weight (g/mmol)
+                * growth_id: Growth/biomass reaction ID
+            - algorithm: Algorithm-specific parameters
+                * experimental_yield: Experimental yield of biomass growth
+                * simulation_method: Simulation method ('ppfba', 'pfba', 'moma', 'mopa')
+                * action_thresholds: List of three thresholds [KO, KD, OE] for gene classification
+                * remove_essential: Whether to exclude essential genes from targets (default: False)
+                * steps: the ecFactory can be divided into 3 steps (default: 123)
+    
+    Returns:
+        Dict[str, Any]: Dictionary containing design results with keys:
+            - geneTable: pandas DataFrame with columns:
+                * geneID: Gene identifier
+                * k_score: K-score value indicating target priority
+                * action: Recommended genetic action ('KO', 'KD', or 'OE')
+                * minimal_candidates_set: Boolean indicating if gene is in minimal set
+            - Additional analysis results and metadata
+    """
+    # prepare parameters
+    model_type = parameters.model['model_type']
+    
+    target_id = parameters.strain['target_id']
+    productName = parameters.strain['product_name']
+    c_source = parameters.strain['c_source']
+    substrate_MW = parameters.strain['substrate_MW']
+    c_uptake = parameters.strain['c_uptake']
+    expYield=parameters.algorithm['experimental_yield']
+    
+    simulation_method = parameters.algorithm['simulation_method']
+    action_thresholds=parameters.algorithm['action_thresholds']
+    steps=parameters.algorithm.get('steps',123) # default to 123 if not provided
+    remove_essential=parameters.algorithm.get('remove_essential',False)
 
-    try:
-        growth_rxnID = modelParam['growth_rxnID']
-    except:
+    if parameters.strain['growth_id'] is not None:
+        growth_id = parameters.strain['growth_id']
+    else:
         if model_type=='etfl':
-            growth_rxnID = model.growth_reaction.id
+            growth_id = model.growth_reaction.id
         elif model_type=='ecGEM':
-            growth_rxnID = 'r_2111'
+            growth_id = 'r_2111'
         elif model_type=='GAN_ec':
-            growth_rxnID = 'r_2111'
+            growth_id = 'r_2111'
         else:
-            print('Error! Please provide the growth reaction ID!')
-            return None
+            raise ValueError('Invalid model type!')
+    
+    if parameters.algorithm['scanning_range'] is not None:
+        scanning_range = parameters.algorithm['scanning_range']
+    else:
+        scanning_range = default_scanning_range(model=model,parameters=parameters)
+        if expYield is None:
+            # if without experimental biomass yield, set as 1/2 of max theoretical yield
+            expYield=(scanning_range[0]+scanning_range[1])/2
+            expYield=round(expYield,4)
 
-    try:
-        substrate_MW=modelParam['substrate_MW']  # g/mmol
-    except:
-        # if no substrate molecular weight, use glucose as default
-        substrate_MW=0.180156
-
+    print(f'Scanning range for FSEOF: {scanning_range}')
+    print(f' Experimental biomass yield set to: {expYield} g/gSubstrate')
     step = 0
+    # model_tmp=copy.deepcopy(model)
 
     # 1.- Run FSEOF to find gene candidates
     # Parameters for FSEOF method
     Nsteps = 8  # number of FBA steps in ecFSEOF
-    step = step + 1
-    print(f'{step}.-  **** Running ecFSEOF method (ref: GECKO utilities) ****')
+    step += 1
+    print(f'{step}.-  **** Running ecFSEOF ****')
     results = ecfseof.run_ecFSEOF(model=model,
-                              targetID=targetID,
+                              target_id=target_id,
                               c_source=c_source,
                               c_uptake=c_uptake,
-                              alphaLims=alphaLims,
+                              scanning_range=scanning_range,
                               Nsteps=Nsteps,
                               model_type=model_type,
                                   substrate_MW=substrate_MW,
-                                  simulation_method=simulation_method)
+                                  simulation_method=simulation_method,
+                                  growth_id=growth_id,
+                                  action_thresholds=action_thresholds)
     # Format results table
-    gene_result=results['geneTable']
-    gene_result.loc[gene_result['k_score'] >= action_thresholds[2], 'action'] = 'OE'
-    gene_result.loc[gene_result['k_score'] <= action_thresholds[1], 'action'] = 'KD'
-    gene_result.loc[gene_result['k_score'] <= action_thresholds[0], 'action'] = 'KO'
-    # remove genes with no action
-    # gene_result = gene_result.loc[gene_result['action'].notnull()]
-    gene_result = gene_result.loc[gene_result['action'].isin(['OE','KD','KO'])]
-    print(f'ecFSEOF returned {len(gene_result)} targets\n')
-    results['geneTable'] = gene_result
+    print(f'ecFSEOF returned {len(results["geneTable"])} targets')
 
-    if steps==1:
-        return results
 
     # 2.- Add flux leak targets (those genes not optimal for production that may consume the product of interest.
     # (probaly extend the approach to inmediate precurssors)
     step += 1
     print(f'{step}.-  **** Find flux leak targets to block ****')
     results['geneTable'] = find_leaks(candidates=results['geneTable'],
-                                      targetID=targetID,
+                                      target_id=target_id,
                                       model=model,
                                       product_name=productName)
 
@@ -108,7 +128,6 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     if remove_essential:
         step += 1
         print(f'{step}.-  **** Removing essential targets ****')
-        # print(type(results['geneTable']))
         results['geneTable'] = remove_essential_targets(candidates=results['geneTable'])
 
     # 4.- Construct Genes-metabolites network for classification of targets
@@ -127,7 +146,10 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     results['independent_genes'] = independant_genes
     results['groups'] = groups
     results['metGeneMatrix'] = metGeneMatrix
+    results['level 1 result'] = results['geneTable']
 
+    if steps==1:
+        return results
 
     # 5.- enzyme usage variety analysis(EUVA)
     step += 1
@@ -145,12 +167,12 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     # Fix suboptimal experimental biomass yield conditions
     fix_gr = expYield * substrate_MW* c_uptake
     fix_gr=round(fix_gr,2)
-    model.reactions.get_by_id(growth_rxnID).bounds = fix_gr, fix_gr
+    model.reactions.get_by_id(growth_id).bounds = fix_gr, fix_gr
     print(' Fix suboptimal experimental biomass = ' + str(fix_gr) + ' h-1')
 
     # calculate the protein abundance by parsimonious ptoteins FBA for optimal production condition
     prod_ppFBA_allprotconc = pprotFBA_prot_conc(model=model,
-                                                  targetID=targetID,
+                                                  target_id=target_id,
                                                     c_source=c_source,
                                                   c_uptake=c_uptake,
                                                   model_type=model_type)
@@ -169,7 +191,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
 
     # calculate the max and min abundance of each candidate enzymes by enzyme usage variety analysis
     prod_enz_fva_result=enzymeVA(model=model,
-                                 targetID=targetID,
+                                 target_id=target_id,
                                  enzymeIDlist=target_enz_list,
                                  c_source=c_source,
                                  c_uptake=c_uptake,
@@ -181,12 +203,12 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     results['prod_enz_fva_result']=prod_enz_fva_result
 
     # release biomass and production constraints
-    model.reactions.get_by_id(growth_rxnID).bounds = 0, 1000
+    model.reactions.get_by_id(growth_id).bounds = 0, 1000
 
     # 5.2 - Run EUVA for optimal growth condition.
     print(str(step) + '.2-  **** Running EUVA for optimal biomass growth condition ****')
     # fix production rate as 1% of the max production rate
-    # model.reactions.get_by_id(targetID).bounds = max_prod*0.01, max_prod*0.01
+    # model.reactions.get_by_id(target_id).bounds = max_prod*0.01, max_prod*0.01
     print('  - Maximize biomass production')
     
     # set growth as objective
@@ -194,7 +216,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
         # check if model has transcriptome
         if hasattr(model, 'transcriptome'):
             from strainOptimizer.manipulation.integration import integrate_omic_data_to_ecmodel
-            params = {'objective_reaction_id': growth_rxnID, 
+            params = {'objective_reaction_id': growth_id, 
                       'obj_frac': 0.4,
                       'expression_threshold':12}
             model=integrate_omic_data_to_ecmodel(model=model,
@@ -202,18 +224,18 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
                                                   method='GIMME',
                                                   parameters=params)
             
-        model.objective = growth_rxnID
+        model.objective = growth_id
         model.objective_direction = 'max'
         # run parsimonious protein usages FBA for max growth
         wt_minprotFBA_protconc=pprotFBA_prot_conc(model=model,
-                                                targetID=growth_rxnID,
+                                                target_id=growth_id,
                                                 enzymeIDlist=target_enz_list,
                                                 c_source=c_source,
                                                 c_uptake=c_uptake,
                                                 model_type=model_type)
         # run enzyme usage variety analysis
         wt_enz_fva_result=enzymeVA(model=model,
-                                targetID=growth_rxnID,
+                                target_id=growth_id,
                                 enzymeIDlist=target_enz_list,
                                 c_source=c_source,
                                 c_uptake=c_uptake,
@@ -225,7 +247,7 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     results['wt_enz_fva_result']=wt_enz_fva_result     # can be deleted
 
     # release biomass constraints
-    model.reactions.get_by_id(growth_rxnID).bounds = 0, 1000
+    model.reactions.get_by_id(growth_id).bounds = 0, 1000
 
     # 5.3 - Discard some targets according to the EUVA results
     print(str(step) + '.3-  **** Discarding targets according to EUVA results ****')
@@ -292,29 +314,23 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
     leval3_list=list(set(leval3_list).difference(set(no_enzyme_list)))
     genetable=results['geneTable']
     # genetable['target_priority_leval']=0
-    genetable.loc[leval1_list,'target_priority_leval']=1
-    genetable.loc[leval2_list,'target_priority_leval']=2
-    genetable.loc[leval3_list,'target_priority_leval']=3
-    genetable.loc[no_enzyme_list,'target_priority_leval']='no enzyme'
+    genetable.loc[leval1_list,'EUVA_priority_level']=1
+    genetable.loc[leval2_list,'EUVA_priority_level']=2
+    genetable.loc[leval3_list,'EUVA_priority_level']=3
+    genetable.loc[no_enzyme_list,'EUVA_priority_level']='no enzyme'
     # mark the no enzyme gene target
 
-    genetable['target_priority_leval'].fillna('removed by EUVA',inplace=True)
+    genetable['EUVA_priority_level'] = genetable['EUVA_priority_level'].fillna('discarded by EUVA')
+
+    results['level 2 result'] = genetable[genetable['EUVA_priority_level']!='discarded by EUVA']
     results['geneTable']=genetable
     print('  - Rank targets by priority levels according to EUVA results: ' + str(len(leval1_list)) + ' targets in level 1, ' + str(len(leval2_list)) + ' targets in level 2, ' + str(len(leval3_list)) + ' targets in level 3')
 
-
-    # return results
-    if steps==12:
-        return results
 
     # # 6.- combine candidate targets
     step=step+1
     tol_tatio=0.001
     print(str(step) + '.    **** Combine candidate targets ****')
-    # # fix substrate uptake rate
-    c_source=modelParam['c_source']
-    c_uptake=modelParam['c_uptake']
-    targetID=modelParam['targetID']
 
     # choose the targets range for combined set calculation
     l1_targets_numb=len(leval1_list)
@@ -330,14 +346,14 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
         selection_range=[1,2,3]
 
     # get candidate
-    candidatesID_list=results['geneTable'][results['geneTable']['target_priority_leval'].isin(selection_range)].index.tolist()
+    candidatesID_list=results['geneTable'][results['geneTable']['EUVA_priority_level'].isin(selection_range)].index.tolist()
     print("Finding the minimal set of %s candidates to achieve the max target production yield" %len(candidatesID_list))
     # find minmal sets of targets
     min_set_analysis_result,optimal_prod_result=find_min_sets.find_min_set(model=model,
                                                                            c_source=c_source,
                                                                            c_uptake=c_uptake,
                                                                            expYield=expYield,
-                                                                            targetID=targetID,
+                                                                            target_id=target_id,
                                                                            geneIDlist=candidatesID_list,
                                                                            gene_enz_fva_result=results['gene_enz_fva_result'],
                                                                             gene_enz_dict=results['gene_enz_dict'],
@@ -348,9 +364,56 @@ def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds
         results['min_set_analysis_result']=min_set_analysis_result
         results['optimal_prod_result']=optimal_prod_result
         min_set_IDlist=min_set_analysis_result[min_set_analysis_result['score']<(1-tol_tatio)].index.tolist()
-        results['geneTable'].loc[min_set_IDlist,'minimal candidates set']=1
-        results['geneTable']['minimal candidates set'].fillna(0,inplace=True)
+        results['geneTable'].loc[min_set_IDlist,'minimal_candidates_set']=1
+        results['geneTable']['minimal_candidates_set'] = results['geneTable']['minimal_candidates_set'].fillna(0)
+        results['level 3 result'] = results['geneTable'][results['geneTable']['minimal_candidates_set']==1]
 
+    if steps==123:
+        return results
+
+
+    # # 7.- calculate the genetic target distance and FCCg, FCCp
+    # step += 1
+    # print(str(step) + '.    **** Calculate the genetic target distance and FCCg, FCCp ****')
+    # model_tmp=copy.deepcopy(model)
+    # geneTable=results['geneTable']
+    # for id in geneTable.index.tolist():
+    #     try:
+    #         gene = model.genes.get_by_id(id)
+    #     except:
+    #         continue
+    #     protID = None
+    #     for rxn in gene.reactions:
+    #         if 'draw_prot' in rxn.id:
+    #             protID = rxn.id
+    #             break
+    #     if protID is not None:
+    #         with model_tmp:
+    #             FCCg,FCCp=calculate_FCC_by_abundance(protID=protID,model=model_tmp,productID=target_id,delta_conc=1)
+    #         print(f'{protID},FCCg: {FCCg}, FCCp: {FCCp}')
+    #         geneTable.loc[id,'FCCg']=FCCg
+    #         geneTable.loc[id,'FCCp']=FCCp
+    #
+    #     try:
+    #         import os
+    #         file_path = os.path.dirname(os.path.abspath(__file__))
+    #         gem=load_model(file_path+'/../../../data/yeast-GEM.xml',model_type='gem')
+    #         gem.genes.get_by_id(id)
+    #     except:
+    #         print(f'Gene {id} not found in the GEM model.')
+    #         continue
+    #     # calculate distance to substrate and product
+    #     distance_to_substrate,distance_to_product=calculate_genetic_target_distance(model=gem,genetic_target=id,substrate_ID='r_1714',productID=target_id)
+    #     geneTable.loc[id,'distance_to_substrate']=distance_to_substrate
+    #     geneTable.loc[id,'distance_to_product']=distance_to_product
+    #     geneTable.loc[id,'distance']=min(distance_to_substrate,distance_to_product)
+    #
+    #     # calculate adjacent reactions
+    #     count,adj_rxnList=count_adjacent_reactions_from_gene(model=gem,gene_id=id)
+    #     geneTable.loc[id,'count']=count
+    #     geneTable.loc[id,'adj_rxnList']=str(adj_rxnList)
+    #
+    # results['geneTable']=geneTable
 
     return results
 

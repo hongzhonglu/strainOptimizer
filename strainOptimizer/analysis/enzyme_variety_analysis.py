@@ -11,7 +11,7 @@ from cobra.flux_analysis import flux_variability_analysis
 from strainOptimizer.manipulation.constraint.enzyme import saturate_enzymes
 
 
-def etfl_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0.99,obj_direction='max'):
+def etfl_EVA(model,target_id,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0.99,obj_direction='max'):
     '''do enzyme variety analysis for ETFL model
     para:
         model: ETFL model
@@ -26,7 +26,7 @@ def etfl_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0
         model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
 
         # 1.Optimize a given objective
-        model.objective = targetID
+        model.objective = target_id
         model.objective_direction = obj_direction
         sol = safe_optim(model)
         obj_value = sol.objective_value
@@ -85,7 +85,7 @@ def etfl_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0
         # 6.remove fixed constraint and old objective
         model.remove_cons_vars([fva_old_objective, fva_old_obj_constraint])
         # restore old objective
-        model.objective = targetID
+        model.objective = target_id
 
     df = pd.DataFrame(results)
     df.rename(columns={'min': 'minimum', 'max': 'maximum'}, inplace=True)
@@ -93,7 +93,7 @@ def etfl_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0
     return df
 
 
-def ecGEM_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=1,obj_direction='max'):
+def ecGEM_EVA(model,target_id,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=1,obj_direction='max'):
     '''do enzyme variety analysis for ecGEM
        para:
            model: ecGEM model
@@ -107,7 +107,7 @@ def ecGEM_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=
     model.reactions.get_by_id(c_source).bounds = c_uptake, c_uptake
 
     # set the objective function
-    model.objective = targetID
+    model.objective = target_id
     model.objective_direction = obj_direction
 
     df_fva_result=flux_variability_analysis(model=model,reaction_list=enzymeIDlist,fraction_of_optimum=fraction_of_optimum)
@@ -115,11 +115,11 @@ def ecGEM_EVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=
     return df_fva_result
 
 
-def enzymeVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0.99,obj_direction='max',model_type='etfl'):
+def enzymeVA(model,target_id,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0.99,obj_direction='max',model_type='etfl'):
     '''do enzyme variety analysis for ecGEM/ETFL model
     para:
         model: ecGEM/ETFL model
-        targetID: the target reaction ID
+        target_id: the target reaction ID
         enzymeIDlist: a list of enzyme ID
         c_source: the carbon source ID
         c_uptake: the carbon source uptake rate(default=1 mmol/gDW/h)
@@ -133,8 +133,8 @@ def enzymeVA(model,targetID,enzymeIDlist,c_source,c_uptake,fraction_of_optimum=0
         '''
 
     if model_type=='etfl':
-        eva_result= etfl_EVA(model=model,targetID=targetID,enzymeIDlist=enzymeIDlist,c_source=c_source,c_uptake=c_uptake,fraction_of_optimum=fraction_of_optimum,obj_direction=obj_direction)
+        eva_result= etfl_EVA(model=model,target_id=target_id,enzymeIDlist=enzymeIDlist,c_source=c_source,c_uptake=c_uptake,fraction_of_optimum=fraction_of_optimum,obj_direction=obj_direction)
     elif model_type=='ecGEM':
-        eva_result=ecGEM_EVA(model=model,targetID=targetID,enzymeIDlist=enzymeIDlist,c_source=c_source,c_uptake=c_uptake,fraction_of_optimum=fraction_of_optimum,obj_direction=obj_direction)
+        eva_result=ecGEM_EVA(model=model,target_id=target_id,enzymeIDlist=enzymeIDlist,c_source=c_source,c_uptake=c_uptake,fraction_of_optimum=fraction_of_optimum,obj_direction=obj_direction)
 
     return eva_result

@@ -1,0 +1,65 @@
+# -*- coding: utf-8 -*-
+from strainOptimizer.strainDesign.workflow_engine import (
+    strainOptimizer_engine,
+    WorkflowParameters,
+)
+# set tolerance
+import cobra
+cobra.Configuration().tolerance=1e-9
+
+model_params = {
+    'model_path': 'examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json',
+    'model_type': 'etfl',
+    'solver': 'optlang-gurobi',
+    'growth_id': 'r_2111',
+    # 'total_enzymes': 0.1
+}
+
+# Strain parameters - target product and growth conditions
+strain_params = {
+    'target_id': 'r_1589',
+    'product_name': '2-phenylethanol',
+    'c_source': 'r_1714',  # glucose exchange reaction
+    'c_uptake': 10,  # glucose uptake rate (mmol/gDW/h)
+}
+
+# Algorithm control parameters - workflow and output settings
+algorithm_params = {
+    'design_algorithm': 'ecFactory',
+    'remove_essential': False,
+    'output_directory': './results',
+    'save_results': True,
+    'steps': 1,
+    'simulation_method': 'ppfba',
+    'scanning_range':[0.1,0.3]
+    # 'experimental_yield':0.1,
+    # 'only_final_result': True,
+    # Note: ecFactory-specific parameters like steps, action_thresholds, etc.
+    # would need to be added to AlgorithmControl if they're used
+}
+
+# Create WorkflowParameters using the three-level structure
+params = WorkflowParameters(
+    model=model_params,
+    strain=strain_params,
+    algorithm=algorithm_params
+)
+
+engine = strainOptimizer_engine(params)
+
+print(f"Engine created for {params.strain['product_name']} production")
+print(f"Target reaction: {params.strain['target_id']}")
+print(f"Carbon source: {params.strain['c_source']}")
+print(f"Model type: {params.model['model_type']}")
+print(f"Algorithm: {params.algorithm['design_algorithm']}")
+
+# Load model
+model = engine.load_model()
+
+# Get model information
+model_info = engine.get_model_info()
+print(f"\nModel info: {model_info}")
+
+# Run the design workflow
+print("\nRunning strain design workflow...")
+results = engine.run_design()

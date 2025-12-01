@@ -4,8 +4,9 @@
 
 import pandas as pd
 import os
-
-def load_experiment_targets(product:str, data_dir='data/experiment_targets'):
+# get the path of this file
+FILE_PATH = os.path.dirname(os.path.abspath(__file__))
+def load_experiment_targets(product:str, data_dir=FILE_PATH+'/../../data/experiment_targets'):
     '''Load experiment targets for a specific product
     '''
     available_products = [f.replace('_exp_targets.tsv','') for f in os.listdir(data_dir) if f.endswith('_exp_targets.tsv')]
@@ -57,7 +58,7 @@ def calculate_exp_consistency(predict_result, exp_data, show=True):
     return exp_consistency
 
 
-def gene_id_to_name(geneIDlist,annotation_file=r'data/s288c_geneNames.csv'):
+def gene_id_to_name(geneIDlist,annotation_file=FILE_PATH+'/../../data/s288c_geneNames.csv'):
     df=pd.read_csv(annotation_file,index_col=0)
     df_geneName=df[df.index.isin(geneIDlist)]['geneName']
     return df_geneName

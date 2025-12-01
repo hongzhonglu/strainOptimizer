@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 import networkx as nx
-from sqlalchemy.testing.plugin.plugin_base import exclusions
 import pickle
+import os
+
+FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 def build_met_rxn_graph_from_GEM(model, exclusions=None):
@@ -98,7 +100,7 @@ def calculate_shortest_reactions_distance(G, reaction1_id: str, reaction2_id: st
         return None
 
 
-def calculate_genetic_target_distance(model,genetic_target, substrate_ID, productID,networkfilepath=r'data/slim_Sce_met_rxn_diGraph.pkl'):
+def calculate_genetic_target_distance(model,genetic_target, substrate_ID, productID,networkfilepath=FILE_PATH+'/../../data/slim_Sce_met_rxn_diGraph.pkl'):
     '''Genetic target distance is defined as the minimum distance between the predicted genetic target and either the substrate or the product in the metabolic topological network.
     Args:
         genetic_target (str): gene ID
@@ -229,7 +231,7 @@ def count_adjacent_reactions(G, reaction_id):
     return len(adjacent_reactions), adjacent_reactions
 
 
-def count_adjacent_reactions_from_gene(model,gene_id,networkfilepath=r'data/slim_Sce_met_rxn_diGraph.pkl'):
+def count_adjacent_reactions_from_gene(model,gene_id,networkfilepath=FILE_PATH+'/../../data/slim_Sce_met_rxn_diGraph.pkl'):
     """
     # could the sum of adjacent reactions of all reactions associated with a gene
     """

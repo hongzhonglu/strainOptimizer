@@ -38,7 +38,7 @@ def compare_EUVR(gene_enz_fva_result):
     return df_gene_euvr_result
 
 
-def pprotFBA_prot_conc(model, targetID,c_source,enzymeIDlist=None,c_uptake=1,model_type='etfl'):
+def pprotFBA_prot_conc(model, target_id,c_source,enzymeIDlist=None,c_uptake=1,model_type='etfl'):
     '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
     para:
         model: must be ETFL model
@@ -51,9 +51,9 @@ def pprotFBA_prot_conc(model, targetID,c_source,enzymeIDlist=None,c_uptake=1,mod
         a pandas series of protein concentration
         '''
     if model_type=='etfl':
-        all_enz_concentration = pprotFBA.etfl_ppFBA_prot_conc(model=model, targetID=targetID,c_source=c_source,c_uptake=c_uptake)
+        all_enz_concentration = pprotFBA.etfl_ppFBA_prot_conc(model=model, target_id=target_id,c_source=c_source,c_uptake=c_uptake)
     elif model_type=='ecGEM':
-        all_enz_concentration = pprotFBA.ecGEM_ppFBA_prot_conc(model=model, targetID=targetID,c_source=c_source,c_uptake=c_uptake)
+        all_enz_concentration = pprotFBA.ecGEM_ppFBA_prot_conc(model=model, target_id=target_id,c_source=c_source,c_uptake=c_uptake)
 
     if enzymeIDlist is None:
         enzs_concentration=all_enz_concentration
@@ -114,13 +114,13 @@ def genelist_to_enzymelist(model,genelist,model_type='etfl'):
     return enzlist,gene_enz_dict
 
 
-def find_leaks(candidates, targetID, model,product_name):
+def find_leaks(candidates, target_id, model,product_name):
     '''function to find reactions that consume the target.
     :param candidates: a pandas dataframe with the following columns:
         1. geneID: gene ID
         2. k_score: k-score of the gene
         3. action: action type for the gene
-    :param targetID: target product exchange reaction ID
+    :param target_id: target product exchange reaction ID
     :param model: COBRA model
     :param product_name: product name
     :return: a pandas dataframe with the following columns:
@@ -143,7 +143,7 @@ def find_leaks(candidates, targetID, model,product_name):
 
         with model:
             # set the target exchange reaction as objective
-            model.objective = targetID
+            model.objective = target_id
             # optimize
             sol = model.optimize()
 
@@ -320,6 +320,47 @@ def getGenesGroups(gene_equal_Matrix):
 
     return geneGroups
 
+def default_scanning_range(model,parameters):
+    """
+    Function to calculate the default scanning range for the ecFSEOF method.
+    Args:
+        model: ETFL/ecGEM model
+        parameters: Parameters object for strainOptimizer includes:
+            expYield: experimental yield of the biomass growth
+            c_source: carbon source exchange reaction ID
+            substrate_MW: substrate molecular weight
+            c_uptake: carbon source uptake rate
+            model_type: model type ('etfl' or 'ecGEM')
+            growth_id: growth reaction ID
+    Returns:
+        scanning_range: a tuple of float
+    """
+    expYield=parameters.algorithm['experimental_yield']
+    c_source = parameters.strain['c_source']
+    substrate_MW = parameters.strain['substrate_MW']
+    c_uptake = parameters.strain['c_uptake']
+    model_type = parameters.model['model_type']
+    growth_id=parameters.model['growth_id']
+
+    # calculate max yield
+    if model_type=='etfl':
+        model.reactions.get_by_id(c_source).bounds=-c_uptake,0
+    elif model_type=='ecGEM':
+        model.reactions.get_by_id(c_source).bounds=0,c_uptake
+    model.objective=growth_id
+    sol=model.optimize()
+    max_yield=sol.objective_value/(c_uptake*substrate_MW)
+
+    # calculate scanning range
+    if expYield is not None:
+        min_yield=expYield*0.5
+        max_yield=min(expYield,max_yield)
+        scanning_range=(min_yield,max_yield)
+    else:
+        scanning_range=(0.1*max_yield,0.9*max_yield)
+
+    return scanning_range
+    
 
 if __name__ == '__main__':
     test_model= load_json_model('models/ecoli_core.json')
@@ -327,8 +368,8 @@ if __name__ == '__main__':
     model=test_model
     geneTable=pd.DataFrame(columns=['geneID','k_score','action'])
     # geneTable=pd.read_excel('code_etfl/strainOptimizer/output/yefl_2PE_design_results.xlsx',sheet_name='geneTable')
-    targetID='r_1589'
-    candidates1=find_leaks(candidates=geneTable, targetID=targetID, model=model)
+    target_id='r_1589'
+    candidates1=find_leaks(candidates=geneTable, target_id=target_id, model=model)
 
     # test getMetGeneMatrix
     metGeneMatrix, metsConectivity, genesConectivity = getMetGeneMatrix(model)

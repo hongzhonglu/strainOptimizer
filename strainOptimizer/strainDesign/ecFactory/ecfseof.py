@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-# date : 2023/2/26 
-# author : wangh
 import os
 import numpy as np
 import pandas as pd
 from strainOptimizer.simulation import ppFBA,moma,mopa,pFBA
+from strainOptimizer.strainDesign.ecFactory.ecFactory_other import default_scanning_range
 
 
 def k_matrix_filter(model, k_matrix, alpha, tol):
@@ -51,11 +50,11 @@ def k_matrix_filter(model, k_matrix, alpha, tol):
     return k_matrix
 
 
-def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filterG=False,model_type='etfl',tol=0.001,method='ppfba'):
+def flux_scanning(model, target_id, c_source,c_uptake, alpha, substrate_MW,growth_id,filterG=False,model_type='etfl',tol=0.001,method='ppfba'):
     """
     Args:
         model : ecModel/ETFL model.
-        targetID (str): Rxn ID for the production target reaction, a exchange reaction is recommended.
+        target_id (str): Rxn ID for the production target reaction, a exchange reaction is recommended.
         c_source (str): Rxn ID for the main carbon source uptake reaction
         c_uptake(float): carbon source uptake rate
         alpha (np.array): scalling factor for production yield for enforced objective limits
@@ -93,19 +92,13 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
     #step 1: build reactions k_matrix
     # Simulate WT (100% max growth):
     FC = {}
-    if model_type == 'etfl':
-        gr_rxnID = model.growth_reaction.id
-    elif model_type == 'ecGEM':
-        gr_rxnID = 'r_2111'
-    elif model_type == 'GAN_ec':
-        gr_rxnID = 'r_2111'
     # check if model has transcriptome attribute
     if hasattr(model, 'transcriptome'):
         print('integrating omic data to model')
         from strainOptimizer.manipulation.integration import integrate_omic_data_to_ecmodel
         # import numpy as np
         expression_threshold = np.percentile(model.transcriptome, 25)
-        params = {'objective_reaction_id': gr_rxnID, 
+        params = {'objective_reaction_id': growth_id, 
                   'obj_frac': 0.4,
                   'expression_threshold':expression_threshold}
         with model:
@@ -114,7 +107,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
                                                     method='GIMME',
                                                     parameters=params)
         wt_sol = ppFBA(model=model,
-                                   targetID=gr_rxnID,
+                                   target_id=growth_id,
                                    c_source=c_source,
                                    c_uptake=c_uptake,
                                    model_type=model_type,
@@ -122,7 +115,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
 
     else:
         wt_sol = ppFBA(model=model,
-                                   targetID=gr_rxnID,
+                                   target_id=growth_id,
                                    c_source=c_source,
                                    c_uptake=c_uptake,
                                    model_type=model_type,
@@ -141,10 +134,11 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
     for i in range(len(alpha)):
         biomass_yield=alpha[i]
         growth=biomass_yield*c_uptake*substrate_MW
-        model.reactions.get_by_id(gr_rxnID).bounds= growth*(1-tol_ratio), growth
+        growth=round(growth, 4)
+        model.reactions.get_by_id(growth_id).bounds= growth*(1-tol_ratio), growth
         if method == 'ppfba':
             product_sol = ppFBA(model=model,
-                                            targetID=targetID,
+                                            target_id=target_id,
                                             c_source=c_source,
                                             c_uptake= c_uptake,
                                             model_type=model_type,
@@ -152,7 +146,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
         elif method == 'pfba':
             with model:
                 product_sol = pFBA(model=model,
-                                                targetID=targetID,
+                                                target_id=target_id,
                                                 c_source=c_source,
                                                 c_uptake=c_uptake,
                                                 model_type=model_type,
@@ -166,11 +160,11 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
                 elif model_type == 'GAN_ec':
                     model.reactions.get_by_id(c_source).bounds = -c_uptake, 0
                 # 1.set the target objective
-                model.reactions.get_by_id(targetID).bounds = 0, 1000
-                model.objective = targetID
+                model.reactions.get_by_id(target_id).bounds = 0, 1000
+                model.objective = target_id
                 model.objective_direction = 'max'
                 product= model.slim_optimize()
-                model.reactions.get_by_id(targetID).bounds= product,1000
+                model.reactions.get_by_id(target_id).bounds= product,1000
                 product_sol=moma(model=model,
                                  reference_solution=wt_sol,
                                  linear=True,
@@ -186,11 +180,11 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
                     model.reactions.get_by_id(c_source).bounds = -c_uptake, 0
 
                 # 1.set the target objective
-                model.reactions.get_by_id(targetID).bounds = 0, 1000
-                model.objective = targetID
+                model.reactions.get_by_id(target_id).bounds = 0, 1000
+                model.objective = target_id
                 model.objective_direction = 'max'
                 product = model.slim_optimize()
-                model.reactions.get_by_id(targetID).bounds = product, 1000
+                model.reactions.get_by_id(target_id).bounds = product, 1000
                 # release growth rate constraint
                 # model.reactions.get_by_id(growth_id)
                 product_sol=mopa(model=model,
@@ -200,7 +194,7 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
                                  show=False)
 
         FC['flux_MUT'] = product_sol.fluxes
-        print('when growth rate is %s,production rate is %s'%(growth,product_sol.fluxes[targetID]))
+        print('when growth rate is %s,production rate is %s'%(growth,product_sol.fluxes[target_id]))
         # v_matrix.iloc[:, i] = FC['flux_MUT']
         v_matrix[alpha[i]] = FC['flux_MUT']
         k_matrix[alpha[i]] = FC['flux_MUT'] / FC['flux_WT']
@@ -281,18 +275,26 @@ def flux_scanning(model, targetID, c_source,c_uptake, alpha, substrate_MW,filter
     return FC
 
 
-def run_ecFSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,substrate_MW,model_type='etfl',simulation_method='ppfba'):
+def run_ecFSEOF(model, parameters=None,
+                target_id=None,
+                c_source=None,
+                c_uptake=None,
+                scanning_range=None,
+                Nsteps=None,
+                substrate_MW=None,
+                growth_id=None,
+                model_type='etfl',simulation_method='ppfba',action_thresholds=[0.05,0.3,1.05]):
     """
     Run Flux-scanning with Enforced Objective Function for a specified production target.
 
     Arguments:
     - model:
         ETFL model
-    - targetID: str
+    - target_id: str
         Reaction ID for the production target reaction, a exchange reaction is recommended
     - c_source: str
         Reaction ID for the main carbon source uptake reaction (make sure that the correct directionality is indicated)
-    - alphaLims: tuple of float
+    - scanning_range: tuple of float
         Minimum and maximum biomass yield [gDw/mmol Csource] for enforced objective limits
     - Nsteps: int
         Number of steps for suboptimal objective in FSEOF
@@ -302,24 +304,59 @@ def run_ecFSEOF(model, targetID, c_source,c_uptake, alphaLims, Nsteps,substrate_
     - dict
         Dictionary with the results of the FSEOF analysis
     """
+    if parameters is not None:
+        target_id = parameters.strain['target_id']
+        c_source = parameters.strain['c_source']
+        c_uptake = parameters.strain['c_uptake']
+        scanning_range = parameters.algorithm['scanning_range']
+        Nsteps = parameters.algorithm.get('Nsteps',8)
+        substrate_MW = parameters.strain['substrate_MW']
+        model_type = parameters.model['model_type']
+        simulation_method = parameters.algorithm['simulation_method']
+        growth_id = parameters.model['growth_id']
+        action_thresholds = parameters.algorithm['action_thresholds']
+    else:
+        if target_id is None:
+            raise ValueError('target_id is required')
+        if c_source is None:
+            raise ValueError('c_source is required')
+        if c_uptake is None:
+            raise ValueError('c_uptake is required')
+        if scanning_range is None:
+            raise ValueError('scanning_range is required')
+        if Nsteps is None:
+            raise ValueError('Nsteps is required')
+        if substrate_MW is None:
+            raise ValueError('substrate_MW is required')
+        if model_type is None:
+            raise ValueError('model_type is required')
+        if simulation_method is None:
+            raise ValueError('simulation_method is required')
 
+    if scanning_range is None:
+        scanning_range = default_scanning_range(model=model,parameters=parameters)
     # Define alpha vector for suboptimal enforced objective values
-    alphaV = np.linspace(alphaLims[0], alphaLims[1], Nsteps)
+    scanning_values = np.linspace(scanning_range[0], scanning_range[1], Nsteps)
     # Run FSEOF analysis
     results = flux_scanning(model=model,
-                            targetID=targetID,
+                            target_id=target_id,
                             c_source=c_source,
                             c_uptake=c_uptake,
-                            alpha=alphaV,
+                            alpha=scanning_values,
+                            growth_id=growth_id,
                             model_type=model_type,
                             substrate_MW=substrate_MW,
                             method=simulation_method)
 
     # Create gene table
-    geneTable = pd.DataFrame(index=results['genes'], columns=["gene_names", "k_score"], dtype=float)
+    geneTable = pd.DataFrame(index=results['genes'], columns=["gene_name", "k_score"], dtype=float)
     geneTable.index.name = "gene_IDs"
-    geneTable["gene_names"] = results["geneNames"]
+    geneTable["gene_name"] = results["geneNames"]
     geneTable["k_score"] = results['k_genes']
+    geneTable.loc[geneTable['k_score'] >= action_thresholds[2], 'action'] = 'OE'
+    geneTable.loc[geneTable['k_score'] <= action_thresholds[1], 'action'] = 'KD'
+    geneTable.loc[geneTable['k_score'] <= action_thresholds[0], 'action'] = 'KO'
+    geneTable = geneTable.loc[geneTable['action'].isin(['OE','KD','KO'])]
     results["geneTable"] = geneTable
 
     # Create reaction table

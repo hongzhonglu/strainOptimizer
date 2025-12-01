@@ -11,7 +11,7 @@ from strainOptimizer.analysis import optimal_yield
 from strainOptimizer.manipulation.constraint import enzyme
 
 
-def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_fva_result,gene_enz_dict,c_source_MW=0.18,model_type='etfl',tol_ratio=0.01):
+def find_min_set(model,c_source,c_uptake,expYield,target_id,geneIDlist,gene_enz_fva_result,gene_enz_dict,c_source_MW=0.18,model_type='etfl',tol_ratio=0.01):
 
     #step 1. construct optimal production mutant
     mutant_model=model.copy()
@@ -44,7 +44,7 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
     mutant_model.reactions.get_by_id(growth_id).bounds=exp_gr,exp_gr
     # calculate optimal production yield,and optimal production rate
     opt_prod_yield, opt_prod_rate=optimal_yield.cal_max_yield(model=mutant_model,
-                                                              targetID=targetID,
+                                                              target_id=target_id,
                                                               c_source=c_source,
                                                               model_type=model_type)
     print('optimal production yield is: ',opt_prod_yield,'mmol/mmol carbon source')
@@ -81,7 +81,7 @@ def find_min_set(model,c_source,c_uptake,expYield,targetID,geneIDlist,gene_enz_f
             mutant_model.reactions.get_by_id(enzID).bounds=wt_lb,wt_ub
         # calculate mod_prod_yield and mod_production_rate
         mod_prod_yield, mod_prod_rate=optimal_yield.cal_max_yield(mutant_model,
-                                                                  targetID,
+                                                                  target_id,
                                                                   c_source,
                                                                   model_type=model_type)
         # calculate score
