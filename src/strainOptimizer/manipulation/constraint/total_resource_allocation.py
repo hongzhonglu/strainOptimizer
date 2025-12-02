@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from pytfa.optim.utils import symbol_sum
-from etfl.optim.constraints import ConstantAllocation
-from etfl.optim.variables import EnzymeVariable
+from ...etfl.optim.constraints import ConstantAllocation
+from ...etfl.optim.variables import EnzymeVariable
 import pandas as pd
 
 

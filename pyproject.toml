@@ -1,5 +1,17 @@
 [build-system]
-# These are the assumed default build requirements from pip:
-# https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
-requires = ["setuptools>=43.0.0", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "strainOptimizer"
+version = "0.1.0"
+description = "A tool for rational cell factory design utilizting ecModels and multi-scale model."
+readme = "README.md"
+authors = [
+    {name = "Hongzhong Lu", email = "your_email@example.com"}
+]
+license = {text = "MIT"}
+
+
+[tool.setuptools.packages.find]
+where = ["src"]

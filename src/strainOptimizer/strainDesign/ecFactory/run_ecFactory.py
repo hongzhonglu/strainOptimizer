@@ -3,6 +3,8 @@ import sys
 import copy
 # sys.path.append(r"D:\code\github\etfl\code_etfl\strainOptimizer\ecFactory")
 import pandas as pd
+
+from examples.model_growth_simulation import growth
 from strainOptimizer.strainDesign.ecFactory import ecfseof
 from strainOptimizer.strainDesign.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR,default_scanning_range
 from strainOptimizer.analysis.enzyme_variety_analysis import enzymeVA
@@ -62,16 +64,15 @@ def run_ecFactory_design(model, parameters):
     c_source = parameters.strain['c_source']
     substrate_MW = parameters.strain['substrate_MW']
     c_uptake = parameters.strain['c_uptake']
-    expYield=parameters.algorithm['experimental_yield']
+
     
     simulation_method = parameters.algorithm['simulation_method']
     action_thresholds=parameters.algorithm['action_thresholds']
     steps=parameters.algorithm.get('steps',123) # default to 123 if not provided
     remove_essential=parameters.algorithm.get('remove_essential',False)
 
-    if parameters.strain['growth_id'] is not None:
-        growth_id = parameters.strain['growth_id']
-    else:
+    growth_id = parameters.algorithm['growth_id']
+    if growth_id is None:
         if model_type=='etfl':
             growth_id = model.growth_reaction.id
         elif model_type=='ecGEM':
@@ -80,10 +81,10 @@ def run_ecFactory_design(model, parameters):
             growth_id = 'r_2111'
         else:
             raise ValueError('Invalid model type!')
-    
-    if parameters.algorithm['scanning_range'] is not None:
-        scanning_range = parameters.algorithm['scanning_range']
-    else:
+
+    expYield=parameters.algorithm['experimental_yield']
+    scanning_range=parameters.algorithm['scanning_range']
+    if scanning_range is None:
         scanning_range = default_scanning_range(model=model,parameters=parameters)
         if expYield is None:
             # if without experimental biomass yield, set as 1/2 of max theoretical yield
@@ -97,7 +98,7 @@ def run_ecFactory_design(model, parameters):
 
     # 1.- Run FSEOF to find gene candidates
     # Parameters for FSEOF method
-    Nsteps = 8  # number of FBA steps in ecFSEOF
+    Nsteps = 10  # number of FBA steps in ecFSEOF
     step += 1
     print(f'{step}.-  **** Running ecFSEOF ****')
     results = ecfseof.run_ecFSEOF(model=model,
@@ -113,7 +114,6 @@ def run_ecFactory_design(model, parameters):
                                   action_thresholds=action_thresholds)
     # Format results table
     print(f'ecFSEOF returned {len(results["geneTable"])} targets')
-
 
     # 2.- Add flux leak targets (those genes not optimal for production that may consume the product of interest.
     # (probaly extend the approach to inmediate precurssors)

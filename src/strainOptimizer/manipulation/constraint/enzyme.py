@@ -3,9 +3,9 @@
 # author : wangh
 # file : enzyme.py
 # project : strainOptimizer
-from etfl.optim.constraints import ModelConstraint
+from ...etfl.optim.constraints import ModelConstraint
 from pytfa.optim.utils import symbol_sum
-from etfl.optim.constraints import ForwardCatalyticConstraint, BackwardCatalyticConstraint
+from ...etfl.optim.constraints import ForwardCatalyticConstraint, BackwardCatalyticConstraint
 
 
 def ETFL_constrain_enz_conc(model,enzymes_bounds,tol_ratio=0.01):

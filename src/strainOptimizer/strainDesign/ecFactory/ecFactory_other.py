@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 import os
-from etfl.io.json import load_json_model
+from ...etfl.io.json import load_json_model
 from strainOptimizer.simulation import pprotFBA
 
 
@@ -343,13 +343,14 @@ def default_scanning_range(model,parameters):
     growth_id=parameters.model['growth_id']
 
     # calculate max yield
-    if model_type=='etfl':
-        model.reactions.get_by_id(c_source).bounds=-c_uptake,0
-    elif model_type=='ecGEM':
-        model.reactions.get_by_id(c_source).bounds=0,c_uptake
-    model.objective=growth_id
-    sol=model.optimize()
-    max_yield=sol.objective_value/(c_uptake*substrate_MW)
+    with model:
+        if model_type=='etfl':
+            model.reactions.get_by_id(c_source).bounds=-c_uptake,0
+        elif model_type=='ecGEM':
+            model.reactions.get_by_id(c_source).bounds=0,c_uptake
+        model.objective=growth_id
+        sol=model.optimize()
+        max_yield=sol.objective_value/(c_uptake*substrate_MW)
 
     # calculate scanning range
     if expYield is not None:

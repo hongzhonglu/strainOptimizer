@@ -3,10 +3,9 @@
 # author : wangh
 import numpy as np
 import pandas as pd
-from etfl.io.json import load_json_model
 from tqdm import tqdm
 from pytfa.analysis.variability import _variability_analysis_element
-from etfl.optim.utils import safe_optim
+from ..etfl.optim.utils import safe_optim
 from cobra.flux_analysis import flux_variability_analysis
 from strainOptimizer.manipulation.constraint.enzyme import saturate_enzymes
 

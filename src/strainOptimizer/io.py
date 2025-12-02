@@ -1,4 +1,4 @@
-from etfl.io.json import load_json_model
+from .etfl.io.json import load_json_model
 from cobra.io import read_sbml_model
 import pandas as pd
 import numpy as np

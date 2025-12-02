@@ -121,8 +121,8 @@ def flux_scanning(model, target_id, c_source,c_uptake, alpha, substrate_MW,growt
                                    model_type=model_type,
                                    tol_ratio=tol_ratio)
     FC['flux_WT'] = wt_sol.fluxes
-    # max_growth = FC['flux_WT'][gr_rxnID]
-    # print('simulate WT-like:',max_growth)
+    max_growth = FC['flux_WT'][growth_id]
+    print('simulate WT-like:',max_growth)
 
     # simulate production in different suboptimal growth rate conditions
     FC['alpha'] = alpha
@@ -134,15 +134,17 @@ def flux_scanning(model, target_id, c_source,c_uptake, alpha, substrate_MW,growt
     for i in range(len(alpha)):
         biomass_yield=alpha[i]
         growth=biomass_yield*c_uptake*substrate_MW
-        growth=round(growth, 4)
-        model.reactions.get_by_id(growth_id).bounds= growth*(1-tol_ratio), growth
+        # growth=round(growth, 4)
+        # model.reactions.get_by_id(growth_id).bounds= growth*(1-tol_ratio), growth
+        model.reactions.get_by_id(growth_id).bounds = growth, growth
         if method == 'ppfba':
-            product_sol = ppFBA(model=model,
-                                            target_id=target_id,
-                                            c_source=c_source,
-                                            c_uptake= c_uptake,
-                                            model_type=model_type,
-                                            tol_ratio=tol_ratio)
+            with model:
+                product_sol = ppFBA(model=model,
+                                                target_id=target_id,
+                                                c_source=c_source,
+                                                c_uptake= c_uptake,
+                                                model_type=model_type,
+                                                tol_ratio=tol_ratio)
         elif method == 'pfba':
             with model:
                 product_sol = pFBA(model=model,
@@ -309,7 +311,7 @@ def run_ecFSEOF(model, parameters=None,
         c_source = parameters.strain['c_source']
         c_uptake = parameters.strain['c_uptake']
         scanning_range = parameters.algorithm['scanning_range']
-        Nsteps = parameters.algorithm.get('Nsteps',8)
+        Nsteps = parameters.algorithm.get('Nsteps',10)
         substrate_MW = parameters.strain['substrate_MW']
         model_type = parameters.model['model_type']
         simulation_method = parameters.algorithm['simulation_method']

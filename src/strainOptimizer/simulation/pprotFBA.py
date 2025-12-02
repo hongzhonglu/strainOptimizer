@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from pytfa.optim.utils import symbol_sum
 from cobra.util.solver import set_objective
-from etfl.optim.utils import safe_optim
+from ..etfl.optim.utils import safe_optim
 from collections import namedtuple
 
 DefaultSol = namedtuple('DefaultSol', field_names=['objective_value','fluxes'])
@@ -27,6 +27,9 @@ def ppFBA(model, target_id,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01)
     - sol: (cobra.Solution) the simulation result
 
     """
+    old_obj=model.objective
+    old_obj_dir=model.objective_direction
+    old_target_bounds=model.reactions.get_by_id(target_id).bounds
 
     if model_type=='etfl':
         model.reactions.get_by_id(c_source).bounds = -c_uptake , -c_uptake
@@ -62,18 +65,9 @@ def ppFBA(model, target_id,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01)
         sol2= DefaultSol('Infeasible', np.zeros(len(model.reactions)))
 
     # release the modified constraints and reset the objective as growth
-    if model_type=='etfl':
-        model.reactions.get_by_id(target_id).bounds = 0, 1000
-        model.objective= model.growth_reaction.id
-        model.objective_direction = 'max'
-    elif model_type=='ecGEM':
-        model.reactions.get_by_id(target_id).bounds = 0, 1000
-        model.objective = 'r_2111'
-        model.objective_direction = 'max'
-    elif model_type=='GAN_ec':
-        model.reactions.get_by_id(target_id).bounds = 0, 1000
-        model.objective = 'r_2111'
-        model.objective_direction = 'max'
+    model.reactions.get_by_id(target_id).bounds = old_target_bounds
+    model.objective= old_obj
+    model.objective_direction = old_obj_dir
 
     return sol2
 

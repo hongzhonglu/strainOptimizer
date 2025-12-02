@@ -2,7 +2,7 @@
 from cobra.flux_analysis import pfba
 from strainOptimizer.analysis import prepare_metabolic_solution_for_etfl, prepare_metabolic_solution_for_ec
 
-def pFBA(model, targetID, c_source, c_uptake, model_type='etfl', direction='max'):
+def pFBA(model, target_id, c_source, c_uptake, model_type='etfl', direction='max'):
     with model:
         if model_type not in ['etfl', 'ecGEM', 'GEM', 'GAN_ec']:
             raise ValueError('model_type should be either "etfl" or "ecGEM"')
@@ -22,7 +22,7 @@ def pFBA(model, targetID, c_source, c_uptake, model_type='etfl', direction='max'
             model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
             met_rxnList=[rxn for rxn in model.reactions if rxn.id.startswith('r_')]
 
-        model.objective = targetID
+        model.objective = target_id
         model.objective_direction = direction
         sol = pfba(model=model,
                    fraction_of_optimum=0.9,

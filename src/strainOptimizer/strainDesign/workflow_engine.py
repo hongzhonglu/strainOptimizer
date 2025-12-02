@@ -28,7 +28,6 @@ DEFAULT_MODEL_PARAMETERS: Dict[str, Any] = {
 DEFAULT_STRAIN_PARAMETERS: Dict[str, Any] = {
     'target_id': None,
     'product_name': 'PRODUCT',
-    'growth_id': 'r_2111',
     'c_source': 'r_1714_REV',  # Default glucose exchange reaction of ecYeastGEM
     'c_uptake': 1.0,  # Default glucose uptake rate 1 mmol/gDW/h
     'substrate_MW': 0.180156,  # g/mmol, glucose molecular weight
