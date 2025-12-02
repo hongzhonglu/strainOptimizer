@@ -19,6 +19,8 @@ pip install -e .
 ```
 
 3. Solvers
+
+We recommend using commercial solvers such as CPLEX or Gurobi. Please install one of them and set up the corresponding Python API.
 - GUROBI (version 10.0)
 
 We recommend obtaining a valid Gurobi license. Otherwise, adjust the code to use a different optimizer. To retrieve your license::

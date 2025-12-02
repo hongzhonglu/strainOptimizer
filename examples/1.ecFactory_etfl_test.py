@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
-from strainOptimizer.strainDesign.workflow_engine import (
-    strainOptimizer_engine,
-    WorkflowParameters,
-)
+import os
+import sys
+sys.path.append(r'D:\code\github\strainOptimizer')
+os.chdir(r'D:\code\github\strainOptimizer')
+from strainOptimizer import strainOptimizer_engine,WorkflowParameters
+
 # set tolerance
 import cobra
-cobra.Configuration().tolerance=1e-9
+# cobra.Configuration().tolerance=1e-9
 
 model_params = {
     'model_path': 'examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json',
     'model_type': 'etfl',
-    'solver': 'optlang-gurobi',
-    'growth_id': 'r_2111',
+    # 'solver': 'optlang-gurobi',
+    'solver': 'optlang-cplex',
+    'growth_id': 'r_4041',
     # 'total_enzymes': 0.1
 }
 
@@ -20,7 +23,7 @@ strain_params = {
     'target_id': 'r_1589',
     'product_name': '2-phenylethanol',
     'c_source': 'r_1714',  # glucose exchange reaction
-    'c_uptake': 10,  # glucose uptake rate (mmol/gDW/h)
+    'c_uptake': 1,  # glucose uptake rate (mmol/gDW/h)
 }
 
 # Algorithm control parameters - workflow and output settings
@@ -29,10 +32,11 @@ algorithm_params = {
     'remove_essential': False,
     'output_directory': './results',
     'save_results': True,
-    'steps': 1,
+    'steps': 123,
     'simulation_method': 'ppfba',
-    'scanning_range':[0.1,0.3]
-    # 'experimental_yield':0.1,
+    # 'simulation_method': 'pfba',
+    # 'scanning_range':[0.1,0.4],
+    # 'experimental_yield':0.16,
     # 'only_final_result': True,
     # Note: ecFactory-specific parameters like steps, action_thresholds, etc.
     # would need to be added to AlgorithmControl if they're used
@@ -55,6 +59,7 @@ print(f"Algorithm: {params.algorithm['design_algorithm']}")
 
 # Load model
 model = engine.load_model()
+model.tolerence=1e-9
 
 # Get model information
 model_info = engine.get_model_info()

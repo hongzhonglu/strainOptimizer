@@ -39,3 +39,4 @@ data/yeast_thermo/compounds.sqlite
 /sclareol_cell_factory_design/
 /.vscode/
 /analysis_code/
+**/*.egg-info/
