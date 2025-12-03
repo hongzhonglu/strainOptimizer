@@ -6,14 +6,13 @@ from strainOptimizer.simulation import ppFBA,moma,mopa,pFBA
 from strainOptimizer.strainDesign.ecFactory.ecFactory_other import default_scanning_range
 
 
-def k_matrix_filter(model, k_matrix, alpha, tol):
+def k_matrix_filter(model, k_matrix, tol):
     """
     Filter k_matrix to remove reactions with problematic patterns.
     
     Args:
         model: Metabolic model
         k_matrix (pd.DataFrame): Matrix with k-scores for reactions across alpha values
-        alpha (np.array): Array of alpha values used in FSEOF
         tol (float): Tolerance threshold for filtering
         
     Returns:
@@ -37,8 +36,8 @@ def k_matrix_filter(model, k_matrix, alpha, tol):
     
     # Filter 5: Remove reactions with inconsistent patterns across alpha values
     # A reaction is consistent if it's mostly up-regulated OR mostly down-regulated
-    down_regulated = np.sum(k_matrix <= (1 - tol), axis=1) >= len(alpha) - 2
-    up_regulated = np.sum(k_matrix >= (1 + tol), axis=1) >= len(alpha) - 2
+    down_regulated = np.sum(k_matrix <= (1 - tol), axis=1) >= k_matrix.shape[1] - 2
+    up_regulated = np.sum(k_matrix >= (1 + tol), axis=1) >= k_matrix.shape[1] - 2
     
     # Keep only reactions that show consistent regulation pattern
     consistent_mask = down_regulated | up_regulated
@@ -134,9 +133,9 @@ def flux_scanning(model, target_id, c_source,c_uptake, alpha, substrate_MW,growt
     for i in range(len(alpha)):
         biomass_yield=alpha[i]
         growth=biomass_yield*c_uptake*substrate_MW
-        # growth=round(growth, 4)
-        # model.reactions.get_by_id(growth_id).bounds= growth*(1-tol_ratio), growth
-        model.reactions.get_by_id(growth_id).bounds = growth, growth
+        growth=round(growth, 4)
+        model.reactions.get_by_id(growth_id).bounds= growth*(1-tol_ratio), growth
+        # model.reactions.get_by_id(growth_id).bounds = growth, growth
         if method == 'ppfba':
             with model:
                 product_sol = ppFBA(model=model,
@@ -196,14 +195,20 @@ def flux_scanning(model, target_id, c_source,c_uptake, alpha, substrate_MW,growt
                                  show=False)
 
         FC['flux_MUT'] = product_sol.fluxes
-        print('when growth rate is %s,production rate is %s'%(growth,product_sol.fluxes[target_id]))
-        # v_matrix.iloc[:, i] = FC['flux_MUT']
-        v_matrix[alpha[i]] = FC['flux_MUT']
-        k_matrix[alpha[i]] = FC['flux_MUT'] / FC['flux_WT']
+        try:
+            print('when growth rate is %s,production rate is %s'%(growth,product_sol.fluxes[target_id]))
+            # v_matrix.iloc[:, i] = FC['flux_MUT']
+            v_matrix[alpha[i]] = FC['flux_MUT']
+            k_matrix[alpha[i]] = FC['flux_MUT'] / FC['flux_WT']
+        except:
+            print('infeasible solution at alpha=%s'%alpha[i])
+            # drop this alpha column
+            v_matrix = v_matrix.drop(columns=[alpha[i]])
+            k_matrix = k_matrix.drop(columns=[alpha[i]])
 
     # Step 2: Calculate reaction k-scores and apply filtering
     # Filter reactions based on k_matrix patterns
-    k_matrix_filtered = k_matrix_filter(model, k_matrix, alpha, tol)
+    k_matrix_filtered = k_matrix_filter(model, k_matrix, tol)
     v_matrix_filtered = v_matrix.loc[k_matrix_filtered.index, :]
     
     # Store filtered matrices in FC dictionary
@@ -249,7 +254,8 @@ def flux_scanning(model, target_id, c_source,c_uptake, alpha, substrate_MW,growt
                 genes_rxns_dict[gene] = related_rxns
                 k_genes[gene] = np.mean(k_matrix_filtered.loc[related_rxns, :].values.flatten())
             else:
-                print('inconsistent k_scores for gene %s'%gene)
+                # print('inconsistent k_scores for gene %s'%gene)
+                continue
     # Order from highest to lowest median k_score (across alphas)
     order = np.argsort(k_genes)[::-1]
     k_genes = k_genes[order]

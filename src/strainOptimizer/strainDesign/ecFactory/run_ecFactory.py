@@ -3,8 +3,6 @@ import sys
 import copy
 # sys.path.append(r"D:\code\github\etfl\code_etfl\strainOptimizer\ecFactory")
 import pandas as pd
-
-from examples.model_growth_simulation import growth
 from strainOptimizer.strainDesign.ecFactory import ecfseof
 from strainOptimizer.strainDesign.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR,default_scanning_range
 from strainOptimizer.analysis.enzyme_variety_analysis import enzymeVA
@@ -71,7 +69,7 @@ def run_ecFactory_design(model, parameters):
     steps=parameters.algorithm.get('steps',123) # default to 123 if not provided
     remove_essential=parameters.algorithm.get('remove_essential',False)
 
-    growth_id = parameters.algorithm['growth_id']
+    growth_id = parameters.model['growth_id']
     if growth_id is None:
         if model_type=='etfl':
             growth_id = model.growth_reaction.id
@@ -98,7 +96,7 @@ def run_ecFactory_design(model, parameters):
 
     # 1.- Run FSEOF to find gene candidates
     # Parameters for FSEOF method
-    Nsteps = 10  # number of FBA steps in ecFSEOF
+    Nsteps = 16  # number of FBA steps in ecFSEOF
     step += 1
     print(f'{step}.-  **** Running ecFSEOF ****')
     results = ecfseof.run_ecFSEOF(model=model,
@@ -359,7 +357,7 @@ def run_ecFactory_design(model, parameters):
                                                                             gene_enz_dict=results['gene_enz_dict'],
                                                                            model_type=model_type,
                                                                            c_source_MW=substrate_MW)
-    if not min_set_analysis_result.empty:
+    if not min_set_analysis_result.empty and not optimal_prod_result is None:
         print('  - Minimal set of targets: %s'%len(min_set_analysis_result[min_set_analysis_result['score']<(1-tol_tatio)]))
         results['min_set_analysis_result']=min_set_analysis_result
         results['optimal_prod_result']=optimal_prod_result

@@ -49,7 +49,11 @@ def find_min_set(model,c_source,c_uptake,expYield,target_id,geneIDlist,gene_enz_
                                                               model_type=model_type)
     print('optimal production yield is: ',opt_prod_yield,'mmol/mmol carbon source')
     print('optimal production rate is: ',opt_prod_rate,'mmol/gDW/h')
+    if opt_prod_yield==0 or opt_prod_rate==0:
+        print('Failed to find minial sets because the optimal production status simulation error!')
+        return None,None
     optimal_prod={'opt_prod_yield':opt_prod_yield,'opt_prod_rate':opt_prod_rate}
+
 
     #step 2. respectively convert each enzyme concentraction to WT-like constraints,and calculate the production yield ,and production rate
     df_min_set_result=pd.DataFrame(columns=['mod_prod_yield','mod_prod_rate','score'])

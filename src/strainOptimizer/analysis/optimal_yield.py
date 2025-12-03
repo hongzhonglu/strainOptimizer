@@ -22,6 +22,8 @@ def cal_max_yield(model,target_id,c_source,model_type='etfl',tol_ratio=0.001):
     max_prod=model.slim_optimize()
     if model.solver.status != 'optimal':
         return 0,0
+    if max_prod<1e-9:
+        return 0,0
     # 3. fix the max target product production and minimize the C source uptake
     model.reactions.get_by_id(target_id).bounds=max_prod*(1-tol_ratio),max_prod
     if model_type=='etfl':

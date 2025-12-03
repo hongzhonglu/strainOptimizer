@@ -358,7 +358,7 @@ def default_scanning_range(model,parameters):
         max_yield=min(expYield,max_yield)
         scanning_range=(min_yield,max_yield)
     else:
-        scanning_range=(0.1*max_yield,0.9*max_yield)
+        scanning_range=(0.2*max_yield,0.9*max_yield)
 
     return scanning_range
     
