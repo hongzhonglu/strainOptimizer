@@ -1,10 +1,11 @@
-cobra
+cobra==0.24.0
 pytfa
+pandas==1.3.5
+optlang==1.5.2
+sympy==1.6.2
 matplotlib
 tqdm
 biopython
 openpyxl
-pandas
-optlang
 xlrd
 numpy

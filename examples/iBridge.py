@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # date : 2024/5/6 
 # author : wangh
-# file : iBridge2.py
+# file : iBridge.py
 # project : strainOptimizer
 from strainOptimizer.strainDesign import run_iBridge_design
 from strainOptimizer.io import load_model

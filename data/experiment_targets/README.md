@@ -7,7 +7,7 @@
 |free fatty acids| 18             |     |         lipid               |10.1016/j.cell.2018.07.013|
 | heme| 38             |     |         porphyrin derivatives               | 10.1073/pnas.2108245119 |
 |ergothioneine| 12             |  Heterologous       | amino acid derivatives |10.1016/j.ymben.2022.01.012|
-|sclareol| 23             |  Heterologous       | terpene                |10.1016/j.ymben.2022.11.002|
+|sclareol| 22             |  Heterologous       | terpene                |10.1016/j.ymben.2022.11.002|
 
 ## 2. Usage
 ```python

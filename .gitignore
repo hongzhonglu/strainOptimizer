@@ -34,3 +34,10 @@ data/yeast_thermo/compounds.sqlite
 /examples/wlj/
 /examples/model_growth_simulation.py
 /examples/data/sce_growth_data.csv
+/logs/
+/examples/result/
+/sclareol_cell_factory_design/
+/.vscode/
+/analysis_code/
+**/*.egg-info/
+examples/ARCHIVE/
