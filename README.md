@@ -86,7 +86,9 @@ engine = strainOptimizer_engine(params)
 # Load model
 engine.load_model()
 # Run the design workflow
-engine.run_design()
+final_result=engine.run_design()
+# More detailed results can be accessed via engine.all_results. 
+# And results at each level have been saved in output_directory.
 ```
 ## Contribution
 
