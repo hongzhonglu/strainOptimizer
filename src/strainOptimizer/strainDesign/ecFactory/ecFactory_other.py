@@ -195,7 +195,7 @@ def remove_essential_targets(candidates,essential_data=r'essential_genes.txt'):
     # get the current directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # set the relative path to the essential genes data
-    essential_path = os.path.join(current_dir,'../../../data', essential_data)
+    essential_path = os.path.join(current_dir,'../../../../data', essential_data)
 
     # remove essential genes
     essentials = pd.read_csv(essential_path, sep='\t').Ids.str.strip()
