@@ -2,6 +2,9 @@
 
 Repo for strain design based on ETFL/ecGEM models.
 
+## TO DO
+- [ ] Fix the unstable simulation process for ETFL models in the current package framwork.
+
 ## Installation
 1. Clone the repo
 
