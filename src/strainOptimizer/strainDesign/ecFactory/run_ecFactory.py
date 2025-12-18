@@ -348,6 +348,7 @@ def run_ecFactory_design(model, parameters):
     print("Finding the minimal set of %s candidates to achieve the max target production yield" %len(candidatesID_list))
     # find minmal sets of targets
     min_set_analysis_result,optimal_prod_result=find_min_sets.find_min_set(model=model,
+                                                                           growth_id=growth_id,
                                                                            c_source=c_source,
                                                                            c_uptake=c_uptake,
                                                                            expYield=expYield,

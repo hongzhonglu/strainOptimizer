@@ -351,6 +351,8 @@ def default_scanning_range(model,parameters):
         model.objective=growth_id
         sol=model.optimize()
         max_yield=sol.objective_value/(c_uptake*substrate_MW)
+        print("Max yield: {}".format(max_yield))
+        print(growth_id,"rate: {}".format(sol.objective_value))
 
     # calculate scanning range
     if expYield is not None:
