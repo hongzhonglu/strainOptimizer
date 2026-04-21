@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
 import numpy as np
 import pandas as pd
 from strainOptimizer.simulation import ppFBA,moma,mopa,pFBA
@@ -381,7 +380,6 @@ def run_ecFSEOF(model, parameters=None,
     results.pop('genes', None)
     results.pop('geneNames', None)
     results.pop('k_genes', None)
-    results.pop('flux_MAX', None)
 
     return results
 
