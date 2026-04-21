@@ -1,86 +1,78 @@
-'''Basic tutorial for ETFL models.
-There are 4 types of ETFL models:
-cEFL: Classical ME model(include expression and stoichiometry constraints) with constant biomass composition.
-        examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json
-vEFL: Classical ME model(include expression and stoichiometry constraints) with variable biomass composition.
-        examples/models/yeast/yeast8_vEFL_2584_enz_64_bins__20231221_104514.json
-cETFL: Thermokinetic-constrained ME model(include expression, stoichiometry and thermokinetic constraints) with constant biomass composition.
-        examples/models/yeast/SlackModel yeast8_cETFL_2584_enz_64_bins__20231221_084634.json
-vETFL: Thermokinetic-constrained ME model(include expression, stoichiometry and thermokinetic constraints) with variable biomass composition
-        examples/models/yeast/SlackModel yeast8_vETFL_2584_enz_64_bins__20231221_105544.json
-'''
-# 1.load and save model
-from etfl.io.json import save_json_model, load_json_model
-model=load_json_model('examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json',solver='optlang-gurobi')
-save_json_model(model,'your_filepath')
+"""
+Basic tutorial for ETFL models bundled in strainOptimizer.
 
-# basic configuration for solver
-from etfl.optim.config import standard_solver_config
-standard_solver_config(model)
+Model types:
+  cEFL  — expression + stoichiometry, constant biomass composition
+  vEFL  — expression + stoichiometry, variable biomass composition
+  cETFL — cEFL + thermodynamic constraints
+  vETFL — vEFL + thermodynamic constraints
+"""
+from pathlib import Path
+import sys
 
 
-# 2.basic simulation
-from etfl.optim.utils import safe_optim
+def _resolve_project_root() -> Path:
+    """Support both script mode and interactive mode."""
+    start = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd().resolve()
+    for candidate in [start, *start.parents]:
+        if (candidate / "src" / "strainOptimizer").exists():
+            return candidate
+    return start
 
-targetID='r_2111'
-carbon_source='r_1714'
-# set objective
-model.objective = targetID
-# FBA
-solution = safe_optim(model)
 
-# ppFBA-- Minimize total sum of enzyme usage FBA
+PROJECT_ROOT = _resolve_project_root()
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from strainOptimizer.etfl.io.json import save_json_model, load_json_model
+from strainOptimizer.etfl.optim.config import standard_solver_config
+from strainOptimizer.etfl.optim.utils import safe_optim
+from strainOptimizer.etfl.optim.variables import EnzymeVariable
 from strainOptimizer.simulation.pprotFBA import ppFBA
-solution = ppFBA(model,targetID,carbon_source,c_uptake=1,model_type='etfl')
-
-# TODO: MOMA simulation
-
-# customized objective setting
 from pytfa.optim.utils import symbol_sum
 
-# minimize the sum of specific reactionlist fluxes
-object_rxnlist=[]
-expr=symbol_sum([model.reactions.get_by_id(x).forward_variable+model.reactions.get_by_id(x).reverse_variable for x in object_rxnlist])
-model.objective=expr
-model.objective_direction='min'
-model.optimize()
+MODEL_PATH = str(PROJECT_ROOT / 'examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json')
 
+# 1. Load and save model
+model = load_json_model(MODEL_PATH, solver='optlang-gurobi')
+# save_json_model(model, 'your_output_path.json')
 
-# 3. gene modification
+# Basic solver configuration
+standard_solver_config(model)
 
+# 2. Basic simulations
+target_id = 'r_2111'
+carbon_source = 'r_1714'
 
+model.objective = target_id
+solution = safe_optim(model)
+print('FBA growth:', solution.objective_value)
 
-# extract constraints and variables
+# ppFBA — minimize total enzyme usage subject to optimal objective
+solution = ppFBA(model, target_id=target_id, c_source=carbon_source, c_uptake=1, model_type='etfl')
+print('ppFBA growth:', solution.objective_value)
 
+# Customized objective: minimize sum of fluxes for a reaction list
+object_rxnlist = []  # fill with reaction IDs of interest
+if object_rxnlist:
+    expr = symbol_sum([
+        model.reactions.get_by_id(x).forward_variable + model.reactions.get_by_id(x).reverse_variable
+        for x in object_rxnlist
+    ])
+    model.objective = expr
+    model.objective_direction = 'min'
+    model.optimize()
 
-# 调用蛋白质，核苷酸等比例
-prot_ratio = model.interpolation_variable.prot_ggdw.variable.primal
-mrna_ratio = model.interpolation_variable.mrna_ggdw.variable.primal
-dna_ratio = model.interpolation_variable.dna_ggdw.variable.primal
-lipid_ratio = model.interpolation_variable.lipid_ggdw.variable.primal
+# 3. Extract macromolecule ratios from solution
+model.objective = target_id
+safe_optim(model)
+prot_ratio         = model.interpolation_variable.prot_ggdw.variable.primal
+mrna_ratio         = model.interpolation_variable.mrna_ggdw.variable.primal
+dna_ratio          = model.interpolation_variable.dna_ggdw.variable.primal
+lipid_ratio        = model.interpolation_variable.lipid_ggdw.variable.primal
 carbohydrate_ratio = model.interpolation_variable.carbohydrate_ggdw.variable.primal
-ion_ratio = model.interpolation_variable.ion_ggdw.variable.primal
+ion_ratio          = model.interpolation_variable.ion_ggdw.variable.primal
+print(f'protein: {prot_ratio:.4f}  mRNA: {mrna_ratio:.4f}  lipid: {lipid_ratio:.4f}')
 
-
-
-
-# 单敲见gene_essentiality_yETFL.py
-
-# logger是一个记录器
-model.logger.warning('一个warning')
-
-
-# 重写了model这个class，涉及了复杂的多重继承
-
-
-
-
-
-
-
-# 拿到变量，酶，mRNA，等
-Enz_vars = model.get_variables_of_type(EnzymeVariable)
-
-
-
-
+# 4. Access enzyme / mRNA variables
+enz_vars = model.get_variables_of_type(EnzymeVariable)

@@ -1,21 +1,28 @@
 # -*- coding: utf-8 -*-
-import os
+from pathlib import Path
 import sys
-sys.path.append(r'D:\code\github\strainOptimizer')
-os.chdir(r'D:\code\github\strainOptimizer')
-from strainOptimizer import strainOptimizer_engine,WorkflowParameters
 
-# set tolerance
-import cobra
-# cobra.Configuration().tolerance=1e-9
+def _resolve_project_root() -> Path:
+    """Support both script mode and interactive mode."""
+    start = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd().resolve()
+    for candidate in [start, *start.parents]:
+        if (candidate / "src" / "strainOptimizer").exists():
+            return candidate
+    return start
+
+
+PROJECT_ROOT = _resolve_project_root()
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from strainOptimizer import strainOptimizer_engine, WorkflowParameters
 
 model_params = {
-    'model_path': 'examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json',
+    'model_path': str(PROJECT_ROOT / 'examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json'),
     'model_type': 'etfl',
     'solver': 'optlang-gurobi',
     # 'solver': 'optlang-cplex',
     'growth_id': 'r_4041',
-    # 'total_enzymes': 0.1
 }
 
 # Strain parameters - target product and growth conditions
@@ -30,16 +37,13 @@ strain_params = {
 algorithm_params = {
     'design_algorithm': 'ecFactory',
     'remove_essential': True,
-    'output_directory': './results',
+    'output_directory': str(PROJECT_ROOT / 'results'),
     'save_results': False,
     'steps': 123,
     'simulation_method': 'ppfba',
     # 'simulation_method': 'pfba',
-    # 'scanning_range':[0.1,0.4],
-    # 'experimental_yield':0.16,
-    # 'only_final_result': True,
-    # Note: ecFactory-specific parameters like steps, action_thresholds, etc.
-    # would need to be added to AlgorithmControl if they're used
+    # 'scanning_range': [0.1, 0.4],
+    # 'experimental_yield': 0.16,
 }
 
 # Create WorkflowParameters using the three-level structure
@@ -59,10 +63,8 @@ print(f"Algorithm: {params.algorithm['design_algorithm']}")
 
 # Load model
 model = engine.load_model()
-model.tolerance=1e-7
+model.tolerance = 1e-7
 model.solver.configuration.timeout = 1200
-# model.solver.configuration.tolerances.optimality = 1e-4
-# model.solver.problem.Params.MIPFocus = 1
 
 # Get model information
 model_info = engine.get_model_info()
@@ -70,4 +72,12 @@ print(f"\nModel info: {model_info}")
 
 # Run the design workflow
 print("\nRunning strain design workflow...")
-results = engine.run_design()
+final_result = engine.run_design()
+
+print("\n========== Design Summary ==========")
+summary = engine.get_results_summary()
+for k, v in summary.items():
+    print(f"  {k}: {v}")
+
+print("\n--- Final gene targets (geneTable) ---")
+print(final_result.to_string())
