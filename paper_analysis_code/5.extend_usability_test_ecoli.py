@@ -44,9 +44,11 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 prefix = RESULTS_DIR / f'{PRODUCT}_design_results_{ALG}'
 
 level_files = {
-    'Level 1': prefix.parent / f'{PRODUCT}_design_results_{ALG}_level_1_result.xlsx',
+    # 'Level 1': prefix.parent / f'{PRODUCT}_design_results_{ALG}_level_1_result.xlsx',
+    'Level 1': prefix.parent / f'{PRODUCT}_design_results_{ALG}_combined_result.xlsx',
     'Level 2': prefix.parent / f'{PRODUCT}_design_results_{ALG}_level_2_result.xlsx',
     'Level 3': prefix.parent / f'{PRODUCT}_design_results_{ALG}_level_3_result.xlsx',
+    'FCC':     prefix.parent / f'{PRODUCT}_design_results_{ALG}_fcc_result.xlsx',
 }
 
 predict_levels = {}
@@ -161,8 +163,9 @@ for label, consistency in consistency_by_level.items():
 
 # ── 6. Bar chart: Recall & Precision across levels ────────────────────────────
 if not summary_df.empty:
+    plt.rcParams['font.family'] = 'Arial'
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-
+    fsize = 12
     levels = summary_df.index.tolist()
     x = np.arange(len(levels))
     width = 0.35
@@ -172,11 +175,11 @@ if not summary_df.empty:
     ax.bar(x - width/2, summary_df['Recall'],   width, label='Recall',    color='#4C72B0')
     ax.bar(x + width/2, summary_df['Precision'], width, label='Precision', color='#DD8452')
     ax.set_xticks(x)
-    ax.set_xticklabels(levels)
+    ax.set_xticklabels(levels,fontsize=fsize)
     ax.set_ylim(0, 1.05)
-    ax.set_ylabel('Score')
+    ax.set_ylabel('Score', fontsize=fsize)
     ax.set_title(f'{PRODUCT} – Recall & Precision')
-    ax.legend()
+    ax.legend(fontsize=fsize)
     for i, row in enumerate(summary_df.itertuples()):
         ax.text(i - width/2, row.Recall + 0.02, f'{row.Recall:.2f}', ha='center', fontsize=9)
         ax.text(i + width/2, row.Precision + 0.02, f'{row.Precision:.2f}', ha='center', fontsize=9)
@@ -188,14 +191,15 @@ if not summary_df.empty:
     misses = exp_total - hits
     ax2.bar(levels, hits,   label='Hits',   color='#55A868')
     ax2.bar(levels, misses, bottom=hits, label='Missed', color='#C44E52', alpha=0.7)
-    ax2.set_ylabel('Number of experimental targets')
-    ax2.set_title(f'{PRODUCT} – Hits vs Missed (n={exp_total})')
-    ax2.legend()
+    ax2.set_ylabel('Number of experimental targets', fontsize=fsize)
+    ax2.set_xticks(x, labels=levels, fontsize=fsize)
+    ax2.set_title(f'{PRODUCT} – Hits vs Missed (n={exp_total})', fontsize=fsize)
+    ax2.legend(fontsize=fsize)
     for i, (h, m) in enumerate(zip(hits, misses)):
         ax2.text(i, h / 2, str(h), ha='center', va='center', color='white', fontweight='bold')
 
     plt.tight_layout()
-    # out_fig = OUTPUT_DIR / f'{PRODUCT}_ecoli_consistency_plot.png'
-    # plt.savefig(out_fig, dpi=150)
+    out_fig = OUTPUT_DIR / f'{PRODUCT}_ecoli_consistency_plot.png'
+    plt.savefig(out_fig, dpi=500)
     # print(f'Plot saved to {out_fig}')
     plt.show()

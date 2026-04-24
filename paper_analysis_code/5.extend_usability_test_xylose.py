@@ -30,7 +30,6 @@ def _resolve_project_root() -> Path:
             return candidate
     return cwd
 
-
 PROJECT_ROOT = _resolve_project_root()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -155,40 +154,40 @@ print(f'Carbon source: {strain_params["c_source"]}  ({strain_params["c_uptake"]}
 print(f'Algorithm   : {algorithm_params["design_algorithm"]}')
 print(f'Output dir  : {RESULTS_DIR}')
 
-print('\nRunning ecFactory workflow...')
-final_result = engine.run_design()
-
-print('\n--- Final gene targets (geneTable) ---')
-print(final_result.to_string())
-
-all_results = engine.all_results
-if 'level 3 result' in all_results:
-    print('\n--- Level 3 result (minimal candidate set) ---')
-    print(all_results['level 3 result'].to_string())
+# print('\nRunning ecFactory workflow...')
+# # final_result = engine.run_design()
+#
+# print('\n--- Final gene targets (geneTable) ---')
+# # print(final_result.to_string())
+#
+# all_results = engine.all_results
+# if 'level 3 result' in all_results:
+#     print('\n--- Level 3 result (minimal candidate set) ---')
+#     print(all_results['level 3 result'].to_string())
 
 # 4. Collect predicted results (xlsx first, fall back to in-memory)
 prefix = f'{PRODUCT}_design_results_{ALG}'
 _xlsx_keys = {
-    'Level 1':      RESULTS_DIR / f'{prefix}_level_1_result.xlsx',
+    'Level 1':      RESULTS_DIR / f'{prefix}_combined_result.xlsx',
     'Level 2':      RESULTS_DIR / f'{prefix}_level_2_result.xlsx',
     'Level 3':      RESULTS_DIR / f'{prefix}_level_3_result.xlsx',
-    'FCC-filtered': RESULTS_DIR / f'{prefix}_fcc_filtered_result.xlsx',
+    'FCC':          RESULTS_DIR / f'{prefix}_fcc_result.xlsx',
 }
-_memory_keys = {
-    'Level 1':      'level 1 result',
-    'Level 2':      'level 2 result',
-    'Level 3':      'level 3 result',
-    'FCC-filtered': 'fcc_filtered_result',
-}
+# _memory_keys = {
+#     'Level 1':      'level 1 result',
+#     'Level 2':      'level 2 result',
+#     'Level 3':      'level 3 result',
+#     'FCC-filtered': 'fcc_filtered_result',
+# }
 
 predict_levels = {}
 for label, path in _xlsx_keys.items():
     if path.exists():
         predict_levels[label] = pd.read_excel(path, index_col=0)
         print(f'Loaded {label}: {len(predict_levels[label])} genes')
-    elif _memory_keys[label] in all_results and all_results[_memory_keys[label]] is not None:
-        predict_levels[label] = all_results[_memory_keys[label]]
-        print(f'[in-memory] {label}: {len(predict_levels[label])} genes')
+    # elif _memory_keys[label] in all_results and all_results[_memory_keys[label]] is not None:
+    #     predict_levels[label] = all_results[_memory_keys[label]]
+    #     print(f'[in-memory] {label}: {len(predict_levels[label])} genes')
     else:
         print(f'[SKIP] {label}: not available')
 
@@ -199,7 +198,7 @@ print(f'Experimental targets ({len(exp_data)}):')
 print(exp_data.to_string())
 
 print('\n' + '=' * 60)
-print(' Prediction vs Experiment Consistency  (KO+KD merged)')
+print(' Prediction vs Experiment Consistency')
 print('=' * 60)
 
 MERGE_KO_KD = True
@@ -252,11 +251,7 @@ for label, pred_df in predict_levels.items():
         'F1': round(f1, 4),
     })
 
-summary_df = pd.DataFrame(summary_rows)
-if not summary_df.empty:
-    summary_df = summary_df.set_index('Level')
-else:
-    summary_df = pd.DataFrame(columns=['Predicted', 'Exp', 'Hits', 'Recall', 'Precision', 'F1'])
+summary_df = pd.DataFrame(summary_rows).set_index('Level')
 
 print('\n' + '=' * 60)
 print(' Summary Table')
@@ -270,68 +265,63 @@ print('=' * 60)
 
 for label, consistency in consistency_by_level.items():
     hit_genes = []
-    for action in ('KD', 'OE') if MERGE_KO_KD else ('KO', 'KD', 'OE'):
+    for action in ('KO', 'KD', 'OE'):
         if action in consistency:
-            tag = 'KO+KD' if (MERGE_KO_KD and action == 'KD') else action
             for g in consistency[action]['hit']:
-                hit_genes.append({'gene': g, 'action': tag})
+                hit_genes.append({'gene': g, 'action': action})
     if hit_genes:
         hit_df = pd.DataFrame(hit_genes).set_index('gene')
         hit_df = hit_df.join(exp_data[['shortNames', 'enzymes']], how='left')
         print(f'\n{label} hits:')
         print(hit_df.to_string())
 
-# 8. Save summary
-out_xlsx = OUTPUT_DIR / f'{PRODUCT}_consistency_summary.xlsx'
-with pd.ExcelWriter(out_xlsx) as writer:
-    summary_df.to_excel(writer, sheet_name='Summary')
-    exp_data.to_excel(writer, sheet_name='Exp_targets')
-    for label, pred_df in predict_levels.items():
-        pred_df.to_excel(writer, sheet_name=label.replace(' ', '_')[:31])
-print(f'\nSummary saved to {out_xlsx}')
+# # 8. Save summary
+# out_xlsx = OUTPUT_DIR / f'{PRODUCT}_consistency_summary.xlsx'
+# with pd.ExcelWriter(out_xlsx) as writer:
+#     summary_df.to_excel(writer, sheet_name='Summary')
+#     exp_data.to_excel(writer, sheet_name='Exp_targets')
+#     for label, pred_df in predict_levels.items():
+#         pred_df.to_excel(writer, sheet_name=label.replace(' ', '_')[:31])
+# print(f'\nSummary saved to {out_xlsx}')
 
 # 9. Bar chart
 if not summary_df.empty:
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    fsize=12
+    # set fontstyle as Arial
+    plt.rcParams['font.family'] = 'Arial'
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
     levels = summary_df.index.tolist()
     x = np.arange(len(levels))
     width = 0.35
 
-    # colour: L1/L2/L3 in blue/orange, FCC-filtered in green
-    bar_colors_r = ['#4C72B0' if 'FCC' not in lv else '#2ca02c' for lv in levels]
-    bar_colors_p = ['#DD8452' if 'FCC' not in lv else '#98df8a' for lv in levels]
-
     ax = axes[0]
-    ax.bar(x - width / 2, summary_df['Recall'],    width, color=bar_colors_r, label='Recall')
-    ax.bar(x + width / 2, summary_df['Precision'], width, color=bar_colors_p, label='Precision', alpha=0.85)
-    ax.set_xticks(x); ax.set_xticklabels(levels, rotation=15, ha='right')
-    ax.set_ylim(0, 1.15); ax.set_ylabel('Score')
-    ax.set_title(f'{PRODUCT} ({ALG}) – Recall & Precision')
-    from matplotlib.patches import Patch
-    ax.legend(handles=[Patch(color='#4C72B0', label='Recall'),
-                       Patch(color='#DD8452', label='Precision')], fontsize=8)
+    ax.bar(x - width / 2, summary_df['Recall'], width, label='Recall', color='#4C72B0')
+    ax.bar(x + width / 2, summary_df['Precision'], width, label='Precision', color='#DD8452')
+    ax.set_xticks(x)
+    ax.set_xticklabels(levels, fontsize=fsize)
+    ax.set_ylim(0, 1.05)
+    ax.set_ylabel('Score',fontsize=fsize)
+    ax.set_title(f'{PRODUCT} - Recall & Precision')
+    ax.legend(fontsize=fsize)
     for i, row in enumerate(summary_df.itertuples()):
-        ax.text(i - width / 2, row.Recall + 0.02,    f'{row.Recall:.2f}',    ha='center', fontsize=8)
-        ax.text(i + width / 2, row.Precision + 0.02, f'{row.Precision:.2f}', ha='center', fontsize=8)
+        ax.text(i - width / 2, row.Recall + 0.02, f'{row.Recall:.2f}', ha='center', fontsize=9)
+        ax.text(i + width / 2, row.Precision + 0.02, f'{row.Precision:.2f}', ha='center', fontsize=9)
 
     ax2 = axes[1]
     exp_total = summary_df['Exp'].iloc[0]
     hits   = summary_df['Hits'].values
     misses = exp_total - hits
-    hit_colors = ['#55A868' if 'FCC' not in lv else '#2ca02c' for lv in levels]
-    ax2.bar(levels, hits,   color=hit_colors, label='Hits')
-    ax2.bar(levels, misses, bottom=hits, color='#C44E52', alpha=0.6, label='Missed')
-    ax2.set_ylabel('Number of experimental targets')
-    ax2.set_title(f'{PRODUCT} – Hits vs Missed (n={exp_total})')
-    ax2.set_xticklabels(levels, rotation=15, ha='right')
-    ax2.legend(fontsize=8)
-    for i, h in enumerate(hits):
-        if h > 0:
-            ax2.text(i, h / 2, str(int(h)), ha='center', va='center',
-                     color='white', fontweight='bold', fontsize=9)
+    ax2.bar(levels, hits, label='Hits', color='#55A868')
+    ax2.bar(levels, misses, bottom=hits, label='Missed', color='#C44E52', alpha=0.7)
+    ax2.set_ylabel('Number of experimental targets',fontsize=fsize)
+    ax2.set_xticks(x, labels=levels, fontsize=fsize)
+    ax2.set_title(f'{PRODUCT} - Hits vs Missed (n={exp_total})',fontsize=fsize)
+    ax2.legend(fontsize=fsize)
+    for i, (h, m) in enumerate(zip(hits, misses)):
+        ax2.text(i, h / 2, str(h), ha='center', va='center', color='white', fontweight='bold')
 
     plt.tight_layout()
     out_fig = OUTPUT_DIR / f'{PRODUCT}_consistency_plot.png'
-    plt.savefig(out_fig, dpi=150)
-    print(f'Plot saved to {out_fig}')
+    plt.savefig(out_fig, dpi=500)
+    # print(f'Plot saved to {out_fig}')
     plt.show()
