@@ -2,17 +2,10 @@
 
 Repo for strain design based on ETFL/ecGEM models.
 
-## TO DO
-- [ ] Fix the unstable simulation process for ETFL models in the current package framwork.
 
 ## Overview
 strainOptimizer is a Python package for strain design using enzyme-constrained genome-scale metabolic models (ecGEMs) and ETFL models. It implements advanced strain design algorithms such as ecFactory and ecFSEOF, which leverage the additional constraints provided by enzyme capacity to identify more realistic genetic modifications for enhanced production of target metabolites.
-## Project Structure
-`
-strainOptimizer/
-├── strainOptimizer/          # Main package directory
-│   ├── __init__.py           # Package initialization
-`
+
 ## Installation
 1. Clone the repo
 
