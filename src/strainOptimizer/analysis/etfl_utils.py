@@ -26,23 +26,29 @@ def prepare_prot_solution_for_etfl(solution,enzymeIDlist=None):
     return prots_solution
 
 
-def prepare_metabolic_solution_for_etfl(solution,rxnList=None):
-    '''Ectract all metabolic fluxes data result from solution for etfl model.
+def prepare_metabolic_solution_for_etfl(solution, rxnList=None, flux_tol=1e-6):
+    '''Extract metabolic fluxes from an ETFL solution for use as MOMA reference.
+
+    Only reactions with |flux| > flux_tol are returned. Filtering out near-zero
+    fluxes avoids over-constraining the MOMA problem when the perturbed model
+    has a slightly different feasible region.
+
     parameters:
         solution: pyTFA solution
-        rxnList: a list of reaction ID
+        rxnList: a list of reaction IDs (None = all r_ reactions)
+        flux_tol: minimum absolute flux to include (default 1e-6)
     return:
         fluxes: pd.Series, the fluxes data
     '''
-    metabolic_solution=pd.Series()
+    metabolic_solution = pd.Series(dtype=float)
     if rxnList is None:
         for id in solution.fluxes.index:
-            if id.startswith('r_'):
-                metabolic_solution[id]=solution.fluxes[id]
+            if id.startswith('r_') and abs(solution.fluxes[id]) > flux_tol:
+                metabolic_solution[id] = solution.fluxes[id]
     else:
         for rxn in rxnList:
-            if rxn in solution.fluxes.index:
-                metabolic_solution[rxn]=solution.fluxes[rxn]
+            if rxn in solution.fluxes.index and abs(solution.fluxes[rxn]) > flux_tol:
+                metabolic_solution[rxn] = solution.fluxes[rxn]
 
     return metabolic_solution
 

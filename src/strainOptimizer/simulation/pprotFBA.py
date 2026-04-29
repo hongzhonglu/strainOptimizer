@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-import os
 import numpy as np
 import pandas as pd
 from pytfa.optim.utils import symbol_sum
 from cobra.util.solver import set_objective
 from ..etfl.optim.utils import safe_optim
 from collections import namedtuple
+from .utils import set_carbon_source_bounds
 
 DefaultSol = namedtuple('DefaultSol', field_names=['objective_value','fluxes'])
 
@@ -31,12 +31,7 @@ def ppFBA(model, target_id,c_source,c_uptake=1,model_type='etfl',tol_ratio=0.01)
     old_obj_dir=model.objective_direction
     old_target_bounds=model.reactions.get_by_id(target_id).bounds
 
-    if model_type=='etfl':
-        model.reactions.get_by_id(c_source).bounds = -c_uptake , -c_uptake
-    elif model_type=='ecGEM':
-        model.reactions.get_by_id(c_source).bounds = c_uptake, c_uptake
-    elif model_type=='GAN_ec':
-        model.reactions.get_by_id(c_source).bounds = -c_uptake, -c_uptake
+    set_carbon_source_bounds(model, c_source, c_uptake, model_type, fixed=True)
     # 1.set the target objective
     model.reactions.get_by_id(target_id).bounds = 0, 1000
     model.objective = target_id

@@ -44,7 +44,8 @@ DEFAULT_ALGORITHM_PARAMETERS: Dict[str, Any] = {
     'experimental_yield': None,
     'scanning_range': None,
     'action_thresholds': [0.05, 0.3, 1.05],
-    'steps': 123
+    'steps': 123,
+    'calculate_fcc': False,  # whether to calculate FCC scores for final result genes
 }
 
 
@@ -192,12 +193,23 @@ class strainOptimizer_engine:
                 raise ValueError(f"Unsupported design algorithm: {design_algorithm}")
             
             self.all_results.update(results)
-            # add geneName(only suit for s288c strain model!)
-            results['geneTable'].loc[:, 'gene_name'] = gene_id_to_name(results['geneTable'].index)
-            results['level 1 result'].loc[:, 'gene_name'] = gene_id_to_name(results['level 1 result'].index)
-            results['level 2 result'].loc[:, 'gene_name'] = gene_id_to_name(results['level 2 result'].index)
-            results['level 3 result'].loc[:, 'gene_name'] = gene_id_to_name(results['level 3 result'].index)
+            # add gene names — only available for S. cerevisiae s288c strain models
+            try:
+                results['geneTable'].loc[:, 'gene_name'] = gene_id_to_name(results['geneTable'].index)
+                results['level 1 result'].loc[:, 'gene_name'] = gene_id_to_name(results['level 1 result'].index)
+                if 'level 2 result' in results:
+                    results['level 2 result'].loc[:, 'gene_name'] = gene_id_to_name(results['level 2 result'].index)
+                if 'level 3 result' in results:
+                    results['level 3 result'].loc[:, 'gene_name'] = gene_id_to_name(results['level 3 result'].index)
+            except Exception:
+                pass
             self.final_result = results['geneTable']
+
+            # Build FCC-filtered result when FCC scores are available
+            if 'fcc_result' in results:
+                results['fcc_filtered_result'] = self._fcc_filter(results['geneTable'])
+                self.all_results['fcc_filtered_result'] = results['fcc_filtered_result']
+                print(f"FCC filtered result: {len(results['fcc_filtered_result'])} genes retained")
 
             
             # Save results if requested
@@ -254,27 +266,39 @@ class strainOptimizer_engine:
         
         return results
     
+    def _fcc_filter(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Return rows consistent with FCC scores: OE→FCCp>0, KD/KO→FCCp<0."""
+        if 'FCCp' not in df.columns:
+            return pd.DataFrame(columns=df.columns)
+        df = df.copy()
+        df['FCCp'] = df['FCCp'].apply(lambda x: 0 if pd.notna(x) and abs(x) < 1e-9 else x)
+        oe_mask    = (df['action'] == 'OE')  & (df['FCCp'] > 0)
+        kd_ko_mask = (df['action'].isin(['KD', 'KO'])) & (df['FCCp'] < 0)
+        return df[oe_mask | kd_ko_mask]
+
     def _save_results(self) -> None:
         """Save workflow results to files"""
-        if not self.final_result:
+        if self.final_result is None:
             print("No results to save")
             return
-        
+
         # Create output directory if it doesn't exist
         output_dir = Path(self.parameters.algorithm.get('output_directory', './results'))
         output_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Generate output filename
+
+        # Generate output filename prefix
         filename_prefix = f"{self.parameters.strain.get('product_name')}_design_results_{self.parameters.algorithm.get('design_algorithm')}"
-        output_path = output_dir / filename_prefix
-        
+
         try:
-            # save final result
-            self.final_result.to_excel(output_path+'combined_result.xlsx')
-            self.all_results['level 1 result'].to_excel(output_path+'level_1_result.xlsx')
-            self.all_results['level 2 result'].to_excel(output_path+'level_2_result.xlsx')
-            self.all_results['level 3 result'].to_excel(output_path+'level_3_result.xlsx')
-            print(f"Results saved to {output_path}")
+            self.final_result.to_excel(output_dir / (filename_prefix + '_combined_result.xlsx'))
+            self.all_results['level 1 result'].to_excel(output_dir / (filename_prefix + '_level_1_result.xlsx'))
+            if 'level 2 result' in self.all_results:
+                self.all_results['level 2 result'].to_excel(output_dir / (filename_prefix + '_level_2_result.xlsx'))
+            if 'level 3 result' in self.all_results:
+                self.all_results['level 3 result'].to_excel(output_dir / (filename_prefix + '_level_3_result.xlsx'))
+            if 'fcc_filtered_result' in self.all_results:
+                self.all_results['fcc_filtered_result'].to_excel(output_dir / (filename_prefix + '_fcc_result.xlsx'))
+            print(f"Results saved to {output_dir}")
         except Exception as e:
             print(f"Failed to save results: {str(e)}")
             raise

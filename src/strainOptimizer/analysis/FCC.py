@@ -1,11 +1,12 @@
 from strainOptimizer.simulation import mopa,moma
 
-def calculate_FCC_by_abundance(protID,model,productID, c_uptake=10, growthID='r_2111',objective='r_4046',objective_direction='max',delta_conc=1):
+def calculate_FCC_by_abundance(protID,model,productID,c_source='r_1714_REV', c_uptake=10, growthID='r_2111',objective='r_4046',objective_direction='max',delta_conc=1):
     """
     Calculate the flux control coefficient (FCC) for a given product and growth reaction by disturb enzyme abundance.
 
     Args:
         model (cobra.Model): The GEM model object.
+        c_source (str): The reaction ID of the carbon source uptake reaction. default is 'r_1714_REV' (glucose uptake).
         c_uptake (float): The uptake rate of the carbon source.
         productID (str): The reaction ID of the product output reaction.
         growthID (str): The reaction ID of the growth reaction.
@@ -16,13 +17,14 @@ def calculate_FCC_by_abundance(protID,model,productID, c_uptake=10, growthID='r_
     Returns:
         tuple: FCCg, FCCp
     """
-    # Set the carbon source uptake rate
-    c_source='r_1714_REV'  # glucose uptake reaction
 
     # calculate the reference strain by maximizing NGAM
-    ref_growth=0.2
+    # ref_growth=0.2
     with model:
         model.reactions.get_by_id(c_source).bounds = (c_uptake, c_uptake)  # set uptake rate
+        model.objective = growthID
+        model.objective_direction='max'
+        ref_growth=model.slim_optimize()/4  # set growth rate to 25% of max to allow for production
         model.objective=productID
         model.objective_direction='max'
         max_production=model.slim_optimize()

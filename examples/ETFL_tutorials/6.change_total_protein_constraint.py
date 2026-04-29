@@ -1,39 +1,33 @@
-'''change total protein constraint in ETFL model'''
+"""Change the total protein pool constraint in an ETFL or ecGEM model."""
+from pathlib import Path
+import sys
+
+def _resolve_project_root() -> Path:
+    """Support both script mode and interactive mode."""
+    start = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd().resolve()
+    for candidate in [start, *start.parents]:
+        if (candidate / "src" / "strainOptimizer").exists():
+            return candidate
+    return start
+
+
+PROJECT_ROOT = _resolve_project_root()
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from strainOptimizer.io import load_model
-from pytfa.optim.utils import symbol_sum
-from etfl.optim.constraints import ConstantAllocation
-from etfl.optim.variables import EnzymeVariable
+from strainOptimizer.manipulation.constraint.total_resource_allocation import constrain_enzymes
 
-def constrain_enzymes(model, total_prot,model_type:['etfl','ecGEM']='etfl'):
-    '''Change total amount of enzymes resource for ecGEM or ETFL model'''
-    if model_type=='etfl':
-        enz_vars = model.get_variables_of_type(EnzymeVariable)
-        # we should first exclude dummy, ribosomes and rnaps
-        exclusion = ['dummy_enzyme',  # 'rib', 'rib_mit', 'rnap', 'rnap_mit'
-                        ]
-        exclusion = ['EZ_{}'.format(x) for x in exclusion]
-        enz_vars = [x for x in enz_vars if x.name not in exclusion]
+# Load model
+model = load_model(
+    filename=str(PROJECT_ROOT / 'examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json'),
+    model_type='etfl',
+    solver='optlang-gurobi',
+)
 
-        expr = symbol_sum([x for x in enz_vars])
+print('Baseline growth:', model.slim_optimize())
 
-        model.add_constraint(kind=ConstantAllocation,
-                                 hook=model,
-                                 expr=expr,
-                                 id_='enzyme_fix',
-                                 ub=total_prot)
-        model.repair()    # update the new constraint
-    #elif model_type=='ecGEM':
+enzymes_ratio = 0.1
+constrain_enzymes(model, total_prot=enzymes_ratio, model_type='etfl')
 
-    return model
-
-
-# load model
-model=load_model(filename='examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json', model_type='etfl',solver='optlang-gurobi')
-
-model.slim_optimize()
-enzymes_ratio=0.1
-
-# set constraint for the total amount of enzymes
-constrain_enzymes(model,enzymes_ratio,model_type='etfl')
-
-model.slim_optimize()
+print('Growth after enzyme constraint:', model.slim_optimize())

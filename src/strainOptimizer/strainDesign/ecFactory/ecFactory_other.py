@@ -2,8 +2,7 @@
 import numpy as np
 import pandas as pd
 import os
-from ...etfl.io.json import load_json_model
-from strainOptimizer.simulation import pprotFBA
+from strainOptimizer.simulation.utils import set_carbon_source_bounds
 
 
 def compare_EUVR(gene_enz_fva_result):
@@ -36,82 +35,6 @@ def compare_EUVR(gene_enz_fva_result):
     df_gene_euvr_result.fillna('undistinguishable',inplace=True)
 
     return df_gene_euvr_result
-
-
-def pprotFBA_prot_conc(model, target_id,c_source,enzymeIDlist=None,c_uptake=1,model_type='etfl'):
-    '''use minprotFBA to predict target proteins concentration(notice!! the output is scaled protein concentration)
-    para:
-        model: must be ETFL model
-        target: the target reaction ID
-        enzID_list: a list of enzyme ID. If None, all enzymes will be included
-        c_source: the carbon source ID
-        c_uptake: the carbon source uptake rate(default=1 mmol/gDW/h)
-        tol: the tolerance of the model
-    return:
-        a pandas series of protein concentration
-        '''
-    if model_type=='etfl':
-        all_enz_concentration = pprotFBA.etfl_ppFBA_prot_conc(model=model, target_id=target_id,c_source=c_source,c_uptake=c_uptake)
-    elif model_type=='ecGEM':
-        all_enz_concentration = pprotFBA.ecGEM_ppFBA_prot_conc(model=model, target_id=target_id,c_source=c_source,c_uptake=c_uptake)
-
-    if enzymeIDlist is None:
-        enzs_concentration=all_enz_concentration
-    else:
-        enzs_concentration=all_enz_concentration[enzymeIDlist]
-
-    return enzs_concentration
-
-
-def genelist_to_enzymelist(model,genelist,model_type='etfl'):
-    '''
-    get the enzyme list from a gene list
-    para:
-        model: must be ETFL model/ ecGEM model
-        genelist: a list of gene ID
-    return:
-        a list of enzyme ID
-    '''
-    if model_type=='etfl':
-        # get all enzyme to gene dict
-        all_enzIDlist=[enz.id for enz in model.enzymes]
-        enz_geneDict={}
-        for enzID in all_enzIDlist:
-            enz_i_genelist=list(model.enzymes.get_by_id(enzID).composition.keys())
-            enz_i_gene_list_to_str='|'.join(enz_i_genelist)
-            enz_geneDict[enzID]=enz_i_gene_list_to_str
-        df_enz_gene=pd.Series(enz_geneDict)
-        # find target enzymes list
-        enzlist=[]
-        gene_enz_dict={}
-        for gene in genelist:
-            enzymes=df_enz_gene[df_enz_gene.str.contains(gene)].index.tolist()
-            gene_enz_dict[gene]=enzymes
-            enzlist=enzlist+enzymes
-        enzlist=list(set(enzlist))
-
-    elif model_type=='ecGEM':
-        # gene_to_prot_dict
-        gene_to_prot_dict = {}
-        for g in model.genes:
-            geneID = g.id
-            for rxn in g.reactions:
-                if 'draw_prot_' in rxn.id:
-                    draw_prot_rxnID = rxn.id
-                    gene_to_prot_dict[geneID] = draw_prot_rxnID
-        all_enz_genes= list(gene_to_prot_dict.keys())
-        # find target enzymes list
-        enzlist=[]
-        gene_enz_dict={}
-        for geneID in genelist:
-            if geneID not in all_enz_genes:
-                gene_enz_dict[geneID]='no enzyme'
-            else:
-                enzID=gene_to_prot_dict[geneID]
-                enzlist.append(enzID)
-                gene_enz_dict[geneID]=[enzID]
-
-    return enzlist,gene_enz_dict
 
 
 def find_leaks(candidates, target_id, model,product_name):
@@ -344,13 +267,12 @@ def default_scanning_range(model,parameters):
 
     # calculate max yield
     with model:
-        if model_type=='etfl':
-            model.reactions.get_by_id(c_source).bounds=-c_uptake,0
-        elif model_type=='ecGEM':
-            model.reactions.get_by_id(c_source).bounds=0,c_uptake
+        set_carbon_source_bounds(model, c_source, c_uptake, model_type, fixed=False)
         model.objective=growth_id
         sol=model.optimize()
         max_yield=sol.objective_value/(c_uptake*substrate_MW)
+        print("Max yield: {}".format(max_yield))
+        print(growth_id,"rate: {}".format(sol.objective_value))
 
     # calculate scanning range
     if expYield is not None:

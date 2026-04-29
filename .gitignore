@@ -40,5 +40,5 @@ data/yeast_thermo/compounds.sqlite
 /.vscode/
 /analysis_code/
 **/*.egg-info/
-examples/ARCHIVE/
-.idea/
+CLAUDE.md
+/examples/models/yeast/GAN_ecYeast/GAN_all_v1.xml

@@ -1,20 +1,17 @@
 # -*- coding: utf-8 -*-
-import sys
-import copy
-# sys.path.append(r"D:\code\github\etfl\code_etfl\strainOptimizer\ecFactory")
 import pandas as pd
 from strainOptimizer.strainDesign.ecFactory import ecfseof
-from strainOptimizer.strainDesign.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,genelist_to_enzymelist,compare_EUVR,default_scanning_range
+from strainOptimizer.strainDesign.ecFactory.ecFactory_other import find_leaks,remove_essential_targets,getMetGeneMatrix,getGeneDepMatrix,getGenesGroups,compare_EUVR,default_scanning_range
+from strainOptimizer.manipulation.variable import genelist_to_enzymelist
 from strainOptimizer.analysis.enzyme_variety_analysis import enzymeVA
 from strainOptimizer.strainDesign.ecFactory import find_min_sets
 from strainOptimizer.manipulation.constraint.total_resource_allocation import constrain_enzymes
 from strainOptimizer.simulation.pprotFBA import pprotFBA_prot_conc
-from strainOptimizer.analysis.network import calculate_genetic_target_distance,count_adjacent_reactions_from_gene
-from strainOptimizer.analysis.FCC import calculate_FCC_by_abundance
-from strainOptimizer.io import load_model
-import pickle
 
 # def run_ecFactory_design(model, modelParam, expYield,alphaLims,action_thresholds=[0.05,0.5,1.05],remove_essential=False,steps=123):
+from strainOptimizer.analysis.FCC import calculate_FCC_by_abundance
+
+
 def run_ecFactory_design(model, parameters):
     """
     Run ecFactory method to identify gene targets for strain design.
@@ -68,6 +65,7 @@ def run_ecFactory_design(model, parameters):
     action_thresholds=parameters.algorithm['action_thresholds']
     steps=parameters.algorithm.get('steps',123) # default to 123 if not provided
     remove_essential=parameters.algorithm.get('remove_essential',False)
+    calculate_fcc=parameters.algorithm.get('calculate_fcc',False)
 
     growth_id = parameters.model['growth_id']
     if growth_id is None:
@@ -348,6 +346,7 @@ def run_ecFactory_design(model, parameters):
     print("Finding the minimal set of %s candidates to achieve the max target production yield" %len(candidatesID_list))
     # find minmal sets of targets
     min_set_analysis_result,optimal_prod_result=find_min_sets.find_min_set(model=model,
+                                                                           growth_id=growth_id,
                                                                            c_source=c_source,
                                                                            c_uptake=c_uptake,
                                                                            expYield=expYield,
@@ -366,53 +365,60 @@ def run_ecFactory_design(model, parameters):
         results['geneTable']['minimal_candidates_set'] = results['geneTable']['minimal_candidates_set'].fillna(0)
         results['level 3 result'] = results['geneTable'][results['geneTable']['minimal_candidates_set']==1]
 
+    if calculate_fcc:
+        step += 1
+        print(str(step) + '.-  **** Calculating FCC scores for L1 genes ****')
+
+        # resolve NGAM reaction id: try default first, fall back to auto-search
+        from strainOptimizer.simulation.utils import find_ngam_reaction
+        _DEFAULT_NGAM = 'r_4046'
+        try:
+            model.reactions.get_by_id(_DEFAULT_NGAM)
+            ngam_id = _DEFAULT_NGAM
+            print(f'  - NGAM reaction: {ngam_id} (default)')
+        except KeyError:
+            ngam_candidates = find_ngam_reaction(model)
+            if not ngam_candidates:
+                raise RuntimeError(
+                    'Cannot find NGAM reaction in model. '
+                    'Please set objective manually via calculate_FCC_by_abundance.'
+                )
+            ngam_id = ngam_candidates[0].id
+            print(f'  - NGAM reaction not found by default id, auto-detected: {ngam_id}'
+                  + (f' (candidates: {[r.id for r in ngam_candidates]})' if len(ngam_candidates) > 1 else ''))
+
+        l1_genes = results['level 1 result'].index.tolist()
+        fcc_records = {gene: {'FCCg': None, 'FCCp': None} for gene in l1_genes}
+        calculated, skipped = 0, 0
+        for gene in l1_genes:
+            enz_list = gene_enz_dict.get(gene, [])
+            if len(enz_list) != 1:
+                skipped += 1
+                continue
+            protID = enz_list[0]
+            try:
+                FCCg, FCCp = calculate_FCC_by_abundance(
+                    protID=protID,
+                    model=model,
+                    productID=target_id,
+                    c_source=c_source,
+                    c_uptake=c_uptake,
+                    growthID=growth_id,
+                    objective=ngam_id,
+                    delta_conc=1
+                )
+                fcc_records[gene] = {'FCCg': FCCg, 'FCCp': FCCp}
+                calculated += 1
+            except Exception as e:
+                print(f'  - FCC calculation failed for {gene} ({protID}): {e}')
+        fcc_df = pd.DataFrame.from_dict(fcc_records, orient='index')
+        results['fcc_result'] = fcc_df
+        for key in ('geneTable', 'level 1 result', 'level 2 result', 'level 3 result'):
+            if key in results and results[key] is not None:
+                results[key] = results[key].join(fcc_df, how='left')
+        print(f'  - FCC calculated: {calculated} genes, skipped (multi/no enzyme): {skipped}')
+
     if steps==123:
         return results
-
-
-    # # 7.- calculate the genetic target distance and FCCg, FCCp
-    # step += 1
-    # print(str(step) + '.    **** Calculate the genetic target distance and FCCg, FCCp ****')
-    # model_tmp=copy.deepcopy(model)
-    # geneTable=results['geneTable']
-    # for id in geneTable.index.tolist():
-    #     try:
-    #         gene = model.genes.get_by_id(id)
-    #     except:
-    #         continue
-    #     protID = None
-    #     for rxn in gene.reactions:
-    #         if 'draw_prot' in rxn.id:
-    #             protID = rxn.id
-    #             break
-    #     if protID is not None:
-    #         with model_tmp:
-    #             FCCg,FCCp=calculate_FCC_by_abundance(protID=protID,model=model_tmp,productID=target_id,delta_conc=1)
-    #         print(f'{protID},FCCg: {FCCg}, FCCp: {FCCp}')
-    #         geneTable.loc[id,'FCCg']=FCCg
-    #         geneTable.loc[id,'FCCp']=FCCp
-    #
-    #     try:
-    #         import os
-    #         file_path = os.path.dirname(os.path.abspath(__file__))
-    #         gem=load_model(file_path+'/../../../data/yeast-GEM.xml',model_type='gem')
-    #         gem.genes.get_by_id(id)
-    #     except:
-    #         print(f'Gene {id} not found in the GEM model.')
-    #         continue
-    #     # calculate distance to substrate and product
-    #     distance_to_substrate,distance_to_product=calculate_genetic_target_distance(model=gem,genetic_target=id,substrate_ID='r_1714',productID=target_id)
-    #     geneTable.loc[id,'distance_to_substrate']=distance_to_substrate
-    #     geneTable.loc[id,'distance_to_product']=distance_to_product
-    #     geneTable.loc[id,'distance']=min(distance_to_substrate,distance_to_product)
-    #
-    #     # calculate adjacent reactions
-    #     count,adj_rxnList=count_adjacent_reactions_from_gene(model=gem,gene_id=id)
-    #     geneTable.loc[id,'count']=count
-    #     geneTable.loc[id,'adj_rxnList']=str(adj_rxnList)
-    #
-    # results['geneTable']=geneTable
-
-    return results
 
 

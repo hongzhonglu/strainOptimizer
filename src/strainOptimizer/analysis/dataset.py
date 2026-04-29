@@ -18,11 +18,20 @@ def load_experiment_targets(product:str, data_dir=FILE_PATH+'/../../../data/expe
         return df
 
 
-def calculate_exp_consistency(predict_result, exp_data, show=True):
+def calculate_exp_consistency(predict_result, exp_data, show=True, merge_ko_kd=False):
     '''
     Calculate the experimental consistency of the prediction results by comparing the predicted gene targets with the experimental gene targets.
+
+    Args:
+        merge_ko_kd: if True, treat KO and KD as one down-regulation category ('KD') before comparison.
     '''
-    predict_result= predict_result[predict_result['action'].isin(['OE', 'KD', 'KO'])]
+    predict_result = predict_result[predict_result['action'].isin(['OE', 'KD', 'KO'])].copy()
+    exp_data = exp_data.copy()
+
+    if merge_ko_kd:
+        predict_result['action'] = predict_result['action'].replace('KO', 'KD')
+        exp_data['action'] = exp_data['action'].replace('KO', 'KD')
+
     predict_group = predict_result.groupby('action')
     exp_group = exp_data.groupby('action')
     exp_consistency = dict()

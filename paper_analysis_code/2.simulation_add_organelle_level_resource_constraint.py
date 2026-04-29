@@ -82,7 +82,8 @@ for product_key,productParam in productParam_dict.items():
         df_organelle_protein_fractions = df_organelle_protein_fractions[df_organelle_protein_fractions['max'] > 0.1]
 
         # remove mitochondria constraint
-        df_organelle_protein_fractions=df_organelle_protein_fractions[~df_organelle_protein_fractions.index.str.contains('mitochondri')]
+        if 'no_mitchondria' in output_file:
+            df_organelle_protein_fractions=df_organelle_protein_fractions[~df_organelle_protein_fractions.index.str.contains('mitochondri')]
 
         # add organelle proteome constraints
         model=add_organelleproteome_constraints(model,

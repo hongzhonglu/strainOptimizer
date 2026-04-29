@@ -1,59 +1,60 @@
 # -*- coding: utf-8 -*-
-# date : 2023/2/7 
-# author : wangh
-# file : 6.gene_modification.py
-# project : etfl
-'''This script is used to modify the gene expression in the model: knock-out,knock-down,overexpression.
-策略：通过设置目标基因的转录/翻译反应ub/lb实现敲除/抑制，以及过表达。
-'''
-from etfl.io.json import load_json_model
+"""
+Gene modification tutorial for ETFL models.
+Demonstrates KO / knockdown / OE by constraining translation reaction bounds.
+"""
+from pathlib import Path
+import sys
 
-def gene_knock_out_down_up(model,geneID,regulate_ratio):
-    '''regulate the gene expression by setting the transcription/translation reaction ub/lb
-    *param:
-    model:etfl formate model
-    geneID:the target gene id
-    regulate_ratio:the ratio to change the target enzyme abundance. overexpression: >1, knock-down: 0-1, knock-out: 0
-    return:modified model
+def _resolve_project_root() -> Path:
+    """Support both script mode and interactive mode."""
+    start = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd().resolve()
+    for candidate in [start, *start.parents]:
+        if (candidate / "src" / "strainOptimizer").exists():
+            return candidate
+    return start
 
-    '''
-    model_name=model.id
+
+PROJECT_ROOT = _resolve_project_root()
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+MODEL_PATH = str(PROJECT_ROOT / 'examples/models/yeast/yeast8_cEFL_2584_enz_64_bins__20231221_083715.json')
+
+from strainOptimizer.etfl.io.json import load_json_model
+
+
+def gene_knock_out_down_up(model, geneID, regulate_ratio):
+    """Regulate gene expression by constraining the translation reaction.
+
+    regulate_ratio > 1  → overexpression
+    0 < regulate_ratio ≤ 1 → knockdown
+    regulate_ratio = 0  → knockout
+    """
     model.optimize()
-    # check weather the model has solution
-    if model.solution.status!='optimal':
+    if model.solution.status != 'optimal':
         print("The model has no solution")
-        return 'None'
-    trans_rxn=model.get_translation(geneID)
-    initial_abundance=trans_rxn.flux
-    rugulate_abundance = initial_abundance * regulate_ratio
-    if regulate_ratio>1:
-        model.logger.info("simulating %s overexpression in %s"%(geneID, model.id))
-        trans_rxn.lower_bound = rugulate_abundance
-    if regulate_ratio<=1:
-        model.logger.info("simulating %s knock-down/out in %s"%(geneID, model_name))
-        trans_rxn.upper_bound = rugulate_abundance
-    # if regulate_ratio==0:
-    #     model.logger.info("simulating %s knock-out in %s"%(geneID, model.id))
-    #     trans_rxn.upper_bound = rugulate_abundance
+        return None
+    trans_rxn = model.get_translation(geneID)
+    initial_abundance = trans_rxn.flux
+    target_abundance = initial_abundance * regulate_ratio
+    if regulate_ratio > 1:
+        model.logger.info("simulating %s overexpression in %s" % (geneID, model.id))
+        trans_rxn.lower_bound = target_abundance
+    else:
+        model.logger.info("simulating %s knock-down/out in %s" % (geneID, model.id))
+        trans_rxn.upper_bound = target_abundance
     return model
 
 
 if __name__ == '__main__':
-    import os
-    os.chdir(r'D:\code\github\etfl')
-    # test_model=load_json_model("models/ME_ecoli_coreModel.json")
-    yefl=load_json_model("yetfl/models/yeast8_cEFL_2584_enz_128_bins__20221228_090737.json")
-    model=yefl
-    sol=model.optimize()
-    print("originate objective value: %s" % sol.objective_value)
-    coding_geneList=[mrna.id for mrna in model.mrnas]
-    for i in range(len(coding_geneList)):
+    model = load_json_model(MODEL_PATH)
+    sol = model.optimize()
+    print("original growth: %s" % sol.objective_value)
+
+    coding_geneList = [mrna.id for mrna in model.mrnas]
+    for geneID in coding_geneList[:5]:  # test first 5 genes
         with model:
-            model_change=gene_knock_out_down_up(model,geneID=coding_geneList[i],regulate_ratio=2)
-            gr=model_change.slim_optimize()
-            print("objective value: %s"%gr)
-
-
-
-
-
+            model_changed = gene_knock_out_down_up(model, geneID=geneID, regulate_ratio=2)
+            if model_changed is not None:
+                gr = model_changed.slim_optimize()
+                print(f"{geneID} OE growth: {gr}")

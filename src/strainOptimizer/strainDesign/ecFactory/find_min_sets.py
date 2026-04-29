@@ -11,7 +11,7 @@ from strainOptimizer.analysis import optimal_yield
 from strainOptimizer.manipulation.constraint import enzyme
 
 
-def find_min_set(model,c_source,c_uptake,expYield,target_id,geneIDlist,gene_enz_fva_result,gene_enz_dict,c_source_MW=0.18,model_type='etfl',tol_ratio=0.01):
+def find_min_set(model,c_source,c_uptake,expYield,target_id,geneIDlist,gene_enz_fva_result,gene_enz_dict,growth_id,c_source_MW=0.18,model_type='etfl',tol_ratio=0.01):
 
     #step 1. construct optimal production mutant
     mutant_model=model.copy()
@@ -32,11 +32,9 @@ def find_min_set(model,c_source,c_uptake,expYield,target_id,geneIDlist,gene_enz_
     if model_type=='etfl':
         # mutant_model.reactions.get_by_id(c_source).bounds=-c_uptake,-c_uptake
         mutant_model.reactions.get_by_id(c_source).bounds=-1000,0
-        growth_id = mutant_model.growth_reaction.id
     elif model_type=='ecGEM':
         # mutant_model.reactions.get_by_id(c_source).bounds=c_uptake,c_uptake
         mutant_model.reactions.get_by_id(c_source).bounds=0,1000
-        growth_id = 'r_2111'
 
     # fix experimental biomass yield
     exp_gr=expYield*c_uptake*c_source_MW
