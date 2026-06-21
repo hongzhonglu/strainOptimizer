@@ -1,17 +1,167 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
+# ---------------------------------------------------------------------------
+# Project metadata
+# ---------------------------------------------------------------------------
 [project]
 name = "strainOptimizer"
 version = "0.1.0"
-description = "A tool for rational cell factory design utilizting ecModels and multi-scale model."
+description = "Computational strain design using enzyme-constrained GEMs and ETFL models"
 readme = "README.md"
+license = { text = "MIT" }
 authors = [
-    {name = "Hongzhong Lu", email = "your_email@example.com"}
+    { name = "Haoyu Wang", email = "wanghy@dicp.ac.cn" },
 ]
-license = {text = "MIT"}
+maintainers = [
+    { name = "Haoyu Wang", email = "wanghy@dicp.ac.cn" },
+]
+keywords = [
+    "metabolic engineering",
+    "strain design",
+    "genome-scale model",
+    "enzyme-constrained model",
+    "ecGEM",
+    "ETFL",
+    "systems biology",
+    "flux balance analysis",
+    "synthetic biology",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
+]
 
+# Minimum Python version
+requires-python = ">=3.9,<3.11"
 
+# ---------------------------------------------------------------------------
+# Core runtime dependencies
+# ---------------------------------------------------------------------------
+# Commercial solvers (Gurobi, CPLEX) are NOT listed here because they require
+# separate license agreements and installation steps. See [project.optional-dependencies]
+# for the optional gurobipy extra.
+# pytfa is available at: https://github.com/EPFL-LCSB/pytfa
+# ---------------------------------------------------------------------------
+dependencies = [
+    # Metabolic modelling
+    "cobra==0.24.0",
+    "python-libsbml>=5.19.0",
+    "optlang==1.5.2",
+
+    # Thermodynamic flux analysis (ETFL dependency)
+    "pytfa>=0.9.1",
+
+    # Symbolic mathematics (ETFL uses sympy internals; v1.6.x required for
+    # compatibility with pytfa and the bundled ETFL code)
+    "sympy==1.6.2",
+
+    # Numerical / data
+    "numpy>=1.23,<2.0",
+    "scipy>=1.13",
+    "pandas>=1.3.5,<2.0",
+
+    # Visualisation
+    "matplotlib>=3.9",
+
+    # Graph utilities (used by cobra internals)
+    "networkx>=3.2",
+
+    # Bioinformatics
+    "biopython>=1.85",
+
+    # Excel I/O for results export
+    "openpyxl>=3.1",
+    "xlrd>=2.0",
+
+    # Data validation (pydantic v1 API; v2 is not compatible)
+    "pydantic>=1.10,<2.0",
+
+    # Progress bars
+    "tqdm>=4.60",
+
+    # Terminal output
+    "rich>=13.0",
+
+    # Miscellaneous
+    "six>=1.16",
+    "python-dateutil>=2.9",
+]
+
+# ---------------------------------------------------------------------------
+# Optional dependencies (extras)
+# ---------------------------------------------------------------------------
+[project.optional-dependencies]
+
+# Commercial solvers — install only if you hold a valid license
+gurobi = [
+    "gurobipy>=10.0",
+]
+cplex = [
+    # IBM CPLEX Python API must be installed manually from the CPLEX directory;
+    # the PyPI package below is the community/stub package. For the full solver
+    # install CPLEX and run: python <cplex>/python/setup.py install
+    "cplex>=22.1",
+]
+
+# Transcriptomics integration (GIMME example requires troppo)
+omics = [
+    "troppo>=0.1",
+]
+
+# Development and testing
+dev = [
+    "pytest>=8.0",
+    "build>=1.0",
+    "twine>=5.0",
+    "ruff>=0.4",
+]
+
+# Install everything (except commercial solvers which need manual setup)
+all = [
+    "strainOptimizer[omics,dev]",
+]
+
+# ---------------------------------------------------------------------------
+# Project URLs (shown on the PyPI page)
+# ---------------------------------------------------------------------------
+[project.urls]
+Homepage        = "https://github.com/hongzhonglu/strainOptimizer"
+Repository      = "https://github.com/hongzhonglu/strainOptimizer"
+"Bug Tracker"   = "https://github.com/hongzhonglu/strainOptimizer/issues"
+Documentation   = "https://github.com/hongzhonglu/strainOptimizer/blob/main/README.md"
+"Zenodo Archive" = "https://doi.org/10.5281/zenodo.20770724"
+
+# ---------------------------------------------------------------------------
+# Package discovery
+# ---------------------------------------------------------------------------
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# Include model files and data bundled inside the package
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.xml", "*.csv", "*.tsv", "*.xlsx", "*.yaml", "*.yml"]
+
+# ---------------------------------------------------------------------------
+# Build / upload workflow (for reference — not executed by setuptools)
+# ---------------------------------------------------------------------------
+# To build and upload to PyPI:
+#
+#   pip install build twine
+#   python -m build                     # creates dist/*.whl and dist/*.tar.gz
+#   twine check dist/*                  # validate metadata before upload
+#   twine upload dist/*                 # upload to PyPI (prompts for credentials)
+#
+# For a test upload first:
+#   twine upload --repository testpypi dist/*
+#
+# Then verify installation from TestPyPI:
+#   pip install --index-url https://test.pypi.org/simple/ strainOptimizer

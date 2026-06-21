@@ -64,17 +64,24 @@ def plot_envelope(flux_spaceList,labels,show=True):
     if len(flux_spaceList) != len(labels):
         raise ValueError('flux_spaceList and labels must be the same length')
     fig, ax = plt.subplots()
+    last_valid = None
     for i in range(len(flux_spaceList)):
         flux_space = flux_spaceList[i]
+        if flux_space is None:
+            # Skip failed/infeasible entries silently
+            continue
+        last_valid = flux_space
         label=labels[i]
         # set the line width
         ax.fill_between(flux_space['x_values'], flux_space['y_ubs'], flux_space['y_lbs'], alpha=0.5,label=label,
                         linewidth=2,
                         # edgecolor='black'
                         )
+    if last_valid is None:
+        raise ValueError('No valid flux spaces in flux_spaceList (all entries are None).')
     # set axis
-    ax.set_xlabel(flux_space['x_axis'])
-    ax.set_ylabel(flux_space['y_axis'])
+    ax.set_xlabel(last_valid['x_axis'])
+    ax.set_ylabel(last_valid['y_axis'])
     # set x,y limit as 0
     ax.set_xlim(0, None)
     ax.set_ylim(0, None)

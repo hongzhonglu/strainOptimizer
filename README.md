@@ -1,5 +1,7 @@
 # strainOptimizer
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20770724.svg)](https://doi.org/10.5281/zenodo.20770724)
+
 Repo for strain design based on ETFL/ecGEM models.
 
 
@@ -50,7 +52,7 @@ from strainOptimizer import strainOptimizer_engine,WorkflowParameters
 
 # Model parameters - model path, type, solver, growth reaction
 model_params = {
-    'model_path': 'example/models\yeast\ecYeastGEM_batch.xml',
+    'model_path': 'examples/models/yeast/ecYeastGEM_batch.xml',
     'model_type': 'ecGEM',
     'solver': 'optlang-gurobi',
     'growth_id': 'r_2111',
