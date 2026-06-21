@@ -79,6 +79,15 @@ class SubclassIndexer:
 INTEGER_VARIABLE_TYPES = ('binary','integer')
 
 
+def _problem_name(model):
+    """Return the optlang problem module name as a string.
+
+    Compatible with optlang <1.6 (module object) and >=1.6 (plain string).
+    """
+    prob = model.problem
+    return prob if isinstance(prob, str) else getattr(prob, '__name__', str(prob))
+
+
 def fix_integers(model):
     """
     Fixes all integer and binary variables of a model, to make it sample-able
@@ -86,7 +95,7 @@ def fix_integers(model):
     :return:
     """
 
-    if model.problem.__name__ == 'optlang.gurobi_interface':
+    if _problem_name(model) == 'optlang.gurobi_interface':
         model.logger.info('Gurobi-based model detected - using  Gurobi\'s .'
                           'fixed() method')
         return _gurobi_fix_integers(model)
@@ -320,7 +329,7 @@ def is_gurobi(model):
     :param model:
     :return:
     """
-    return model.problem.__name__ == 'optlang.gurobi_interface'
+    return _problem_name(model) == 'optlang.gurobi_interface'
 
 
 def fix_growth(model, solution = None):

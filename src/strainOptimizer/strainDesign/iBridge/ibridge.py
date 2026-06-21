@@ -45,7 +45,7 @@ def generate_multiple_flux_profiles(model,targetID, c_source, c_uptake,model_typ
             method='moma'
         # get wild-type flux for GEM model by pFBA
         wt_sol=pFBA(model=model,
-                targetID=growthID,
+                target_id=growthID,
                 c_source=c_source,
                 c_uptake=c_uptake,
                 model_type=model_type,
@@ -53,7 +53,7 @@ def generate_multiple_flux_profiles(model,targetID, c_source, c_uptake,model_typ
 
     else:
         wt_sol=ppFBA(model=model,
-                    targetID=growthID,
+                    target_id=growthID,
                     c_source=c_source,
                     c_uptake=c_uptake,
                     model_type=model_type,
@@ -61,14 +61,14 @@ def generate_multiple_flux_profiles(model,targetID, c_source, c_uptake,model_typ
 
     # 2. Get the range of production of targetID
     min_sol=fba(model=model,
-                targetID=targetID,
+                target_id=targetID,
                 c_source=c_source,
                 c_uptake=c_uptake,
                 model_type=model_type,
                 direction='min')
     min_prod=min_sol.fluxes[targetID]
     max_sol=fba(model=model,
-                targetID=targetID,
+                target_id=targetID,
                 c_source=c_source,
                 c_uptake=c_uptake,
                 model_type=model_type,
@@ -103,7 +103,7 @@ def generate_multiple_flux_profiles(model,targetID, c_source, c_uptake,model_typ
                     model_type=model_type)
         elif method == 'ppfba':
             sol=ppFBA(model=model,
-                    targetID=growthID,
+                    target_id=growthID,
                     c_source=c_source,
                     c_uptake=c_uptake,
                     model_type=model_type,

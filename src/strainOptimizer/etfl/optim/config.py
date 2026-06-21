@@ -10,6 +10,16 @@ Solver configuration helpers
 
 """
 
+def _interface_name(model):
+    """Return the solver interface module name as a string.
+
+    Compatible with optlang <1.6 (where ``model.solver.interface`` is a module
+    object) and >=1.6 (where it may already be a plain string).
+    """
+    iface = model.solver.interface
+    return iface if isinstance(iface, str) else getattr(iface, '__name__', str(iface))
+
+
 def standard_solver_config(model, verbose = True):
     """
     Basic solver settings for ETFL
@@ -24,7 +34,7 @@ def standard_solver_config(model, verbose = True):
     # model.solver.configuration.presolve = True
     # model.solver.configuration.lp_method = 'dual'
     # model.solver.configuration.lp_method = 'barrier'
-    if model.solver.interface.__name__ == 'optlang.gurobi_interface':
+    if _interface_name(model) == 'optlang.gurobi_interface':
         # model.solver.problem.Params.BarHomogeneous = 1
         model.solver.problem.Params.NumericFocus = 3
         # model.solver.problem.Params.ScaleFlag = 3  # Aggressive
@@ -43,7 +53,7 @@ def gene_ko_config(model):
     :return:
     """
     standard_solver_config(model)
-    if model.solver.interface.__name__ == 'optlang.gurobi_interface':
+    if _interface_name(model) == 'optlang.gurobi_interface':
         # model.solver.problem.Params.MIPFocus = 1# Find a feasible solution
         model.solver.problem.Params.NormAdjust = 2#
         model.solver.problem.Params.AggFill = 10#
@@ -60,7 +70,7 @@ def growth_uptake_config(model):
     :return:
     """
     standard_solver_config(model)
-    if model.solver.interface.__name__ == 'optlang.gurobi_interface':
+    if _interface_name(model) == 'optlang.gurobi_interface':
         # model.solver.problem.Params.Cuts = 3 # Focus on finding feasible solutions
         # model.solver.problem.Params.MIPFocus = 1 # Focus on finding feasible solutions
         # model.solver.problem.Params.ConcurrentMIP = 4 # 4 independant solvers
@@ -80,7 +90,7 @@ def redhuman_config(model):
     :return:
     """
     standard_solver_config(model)
-    if model.solver.interface.__name__ == 'optlang.gurobi_interface':
+    if _interface_name(model) == 'optlang.gurobi_interface':
         model.solver.problem.Params.NormAdjust = 0
         model.solver.problem.Params.RINS = 100
         model.solver.problem.Params.ZeroObjNodes = 2500
